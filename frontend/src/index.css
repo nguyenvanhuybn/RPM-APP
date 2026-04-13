@@ -111,11 +111,12 @@ body { background-color: var(--bg-primary); color: var(--text-primary); overflow
 .time-text b { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 
 .legend-box {
-  position: absolute; bottom: 32px; right: 40px; background: white;
-  padding: 16px 24px; border-radius: 8px; box-shadow: var(--shadow-md); border: 1px solid var(--gray-light);
+  display: inline-flex; align-items: center; gap: 16px; background: white;
+  padding: 12px 24px; border-radius: 8px; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-light);
+  margin-top: 24px;
 }
-.legend-box h4 { font-size: 11px; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase;}
-.legend-box ul { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 12px; font-weight: 500;}
+.legend-box h4 { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin: 0; }
+.legend-box ul { list-style: none; display: flex; flex-direction: row; gap: 24px; font-size: 12px; font-weight: 500;}
 .legend-box .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
 
 /* REUSABLE TABLES / FORMS */
