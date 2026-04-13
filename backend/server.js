@@ -73,15 +73,24 @@ const initDB = async () => {
     // Seed default products
     const res = await client.query('SELECT count(*) FROM products');
     if (res.rows[0].count == 0) {
-      await client.query(`
-        INSERT INTO products (product_code, product_name, actual_quantity, target_quantity) VALUES
-        ('SP-01', 'Sản phẩm 1', 2300, 2500),
-        ('SP-02', 'Sản phẩm 2', 1000, 1500),
-        ('SP-10', 'Sản phẩm 10', 1100, 1800),
-        ('SP-04', 'Sản phẩm 4', 700, 2200),
-        ('SS-07', 'Sản phẩm 7', 1800, 2300),
-        ('SP-05', 'Sản phẩm 5', 800, 1200)
+        INSERT INTO products (product_code, product_name, actual_quantity, target_quantity, standard_conditions) VALUES
+        ('SP-01', 'Sản phẩm 1', 2300, 2500, '{"revA": 150, "revV": 12, "revT": 120, "fwd1A": 220, "fwd1V": 12, "fwd1T": 45, "fwd2A": 280, "fwd2V": 12, "fwd2T": 120, "temp": 52}'),
+        ('SP-02', 'Sản phẩm 2', 1000, 1500, '{"revA": 120, "revV": 10, "revT": 110, "fwd1A": 200, "fwd1V": 10, "fwd1T": 45, "fwd2A": 200, "fwd2V": 12, "fwd2T": 120, "temp": 55}'),
+        ('SP-10', 'Sản phẩm 10', 1100, 1800, '{"revA": 150, "revV": 12, "revT": 450, "fwd1A": 220, "fwd1V": 12, "fwd1T": 60, "fwd2A": 280, "fwd2V": 12, "fwd2T": 90, "temp": 48}'),
+        ('SP-04', 'Sản phẩm 4', 700, 2200, '{"revA": 180, "revV": 14, "revT": 200, "fwd1A": 250, "fwd1V": 13, "fwd1T": 60, "fwd2A": 300, "fwd2V": 13, "fwd2T": 150, "temp": 50}'),
+        ('SS-07', 'Sản phẩm 7', 1800, 2300, '{"revA": 130, "revV": 11, "revT": 130, "fwd1A": 210, "fwd1V": 11, "fwd1T": 50, "fwd2A": 260, "fwd2V": 11, "fwd2T": 110, "temp": 53}'),
+        ('SP-05', 'Sản phẩm 5', 800, 1200, '{"revA": 100, "revV": 9, "revT": 100, "fwd1A": 180, "fwd1V": 9, "fwd1T": 40, "fwd2A": 220, "fwd2V": 10, "fwd2T": 100, "temp": 46}')
       `);
+    } else {
+        // Migration for existing rows
+        await client.query(`
+          UPDATE products SET standard_conditions = '{"revA": 150, "revV": 12, "revT": 120, "fwd1A": 220, "fwd1V": 12, "fwd1T": 45, "fwd2A": 280, "fwd2V": 12, "fwd2T": 120, "temp": 52}' WHERE product_code = 'SP-01' AND standard_conditions IS NULL;
+          UPDATE products SET standard_conditions = '{"revA": 120, "revV": 10, "revT": 110, "fwd1A": 200, "fwd1V": 10, "fwd1T": 45, "fwd2A": 200, "fwd2V": 12, "fwd2T": 120, "temp": 55}' WHERE product_code = 'SP-02' AND standard_conditions IS NULL;
+          UPDATE products SET standard_conditions = '{"revA": 150, "revV": 12, "revT": 450, "fwd1A": 220, "fwd1V": 12, "fwd1T": 60, "fwd2A": 280, "fwd2V": 12, "fwd2T": 90, "temp": 48}' WHERE product_code = 'SP-10' AND standard_conditions IS NULL;
+          UPDATE products SET standard_conditions = '{"revA": 180, "revV": 14, "revT": 200, "fwd1A": 250, "fwd1V": 13, "fwd1T": 60, "fwd2A": 300, "fwd2V": 13, "fwd2T": 150, "temp": 50}' WHERE product_code = 'SP-04' AND standard_conditions IS NULL;
+          UPDATE products SET standard_conditions = '{"revA": 130, "revV": 11, "revT": 130, "fwd1A": 210, "fwd1V": 11, "fwd1T": 50, "fwd2A": 260, "fwd2V": 11, "fwd2T": 110, "temp": 53}' WHERE product_code = 'SS-07' AND standard_conditions IS NULL;
+          UPDATE products SET standard_conditions = '{"revA": 100, "revV": 9, "revT": 100, "fwd1A": 180, "fwd1V": 9, "fwd1T": 40, "fwd2A": 220, "fwd2V": 10, "fwd2T": 100, "temp": 46}' WHERE product_code = 'SP-05' AND standard_conditions IS NULL;
+        `);
     }
   } catch (err) {
     console.log("DB init error", err.message);
