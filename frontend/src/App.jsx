@@ -607,9 +607,17 @@ function App() {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-modal-save" onClick={() => {
+              <button className="btn-modal-save" onClick={async () => {
                 if(!editingTank.name) return;
-                setTanks(tanks.map(t => t.id === editingTank.id ? editingTank : t));
+                try {
+                  const res = await fetch(`${API_URL}/api/plc/configs/${editingTank.id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ product: editingTank.product })
+                  });
+                  const d = await res.json();
+                  if (!d.success) alert("Lỗi: " + d.error);
+                } catch(e) { console.error(e); }
                 setModalType('NONE');
               }}>💾 LƯU THÔNG TIN</button>
             </div>

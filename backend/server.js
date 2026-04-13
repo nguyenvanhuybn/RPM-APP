@@ -214,11 +214,14 @@ app.put('/api/plc/configs/:id', (req, res) => {
      if (sPlc) {
         sPlc.product = product;
         sPlc.cycleProgress = 0;
-        pool.query('SELECT actual_quantity, target_quantity FROM products WHERE product_code = $1', [product])
+        pool.query('SELECT actual_quantity, target_quantity, standard_conditions FROM products WHERE product_code = $1', [product])
         .then(r => {
             if (r.rows.length > 0) {
                 sPlc.actual = r.rows[0].actual_quantity;
                 sPlc.target = r.rows[0].target_quantity;
+                if (r.rows[0].standard_conditions) {
+                   tankSettings[id] = r.rows[0].standard_conditions;
+                }
             }
         }).catch(()=>{});
      }
@@ -408,9 +411,17 @@ app.listen(PORT, () => {
   if (process.env.ENABLE_PLC_SIM === 'true' || process.env.NODE_ENV === 'production') {
     console.log('\n🛠️  KHỞI ĐỘNG GIẢ LẬP PLC NỘI TUYẾN (INLINE)...');
 
-
-
-    simPlcs.forEach(plc => {
+    pool.query('SELECT * FROM products').then((res) => {
+        const prodData = res.rows;
+        simPlcs.forEach(p => {
+             const prod = prodData.find(pd => pd.product_code === p.product);
+             if (prod) {
+                 p.actual = prod.actual_quantity;
+                 p.target = prod.target_quantity;
+                 if (prod.standard_conditions) tankSettings[p.id] = prod.standard_conditions;
+             }
+        });
+    }).catch(()=>{});    simPlcs.forEach(plc => {
       console.log(`  ✅ PLC-0${plc.id} | ${plc.tank} | ${plc.product}`);
     });
     console.log(`  Tốc độ: 1 tín hiệu/giây × ${simPlcs.length} PLC\n`);
@@ -434,12 +445,14 @@ app.listen(PORT, () => {
         }
 
         const s = tankSettings[plc.id];
+        const cycleRatio = Math.min(1, (plc.cycleProgress || 0) / 100);
+        
         tankState[plc.id] = {
           id: plc.id, name: plc.tank, status: 'ON', product: plc.product,
           actual: {
-            revA: fluctuate(s.revA, 3), revV: fluctuate(s.revV, 0.5), revT: '',
-            fwd1A: fluctuate(s.fwd1A, 4), fwd1V: fluctuate(s.fwd1V, 0.4), fwd1T: '',
-            fwd2A: fluctuate(s.fwd2A, 5), fwd2V: fluctuate(s.fwd2V, 0.5), fwd2T: '',
+            revA: fluctuate(s.revA, 3), revV: fluctuate(s.revV, 0.5), revT: s.revT ? Math.floor(s.revT * cycleRatio) : '',
+            fwd1A: fluctuate(s.fwd1A, 4), fwd1V: fluctuate(s.fwd1V, 0.4), fwd1T: s.fwd1T ? Math.floor(s.fwd1T * cycleRatio) : '',
+            fwd2A: fluctuate(s.fwd2A, 5), fwd2V: fluctuate(s.fwd2V, 0.5), fwd2T: s.fwd2T ? Math.floor(s.fwd2T * cycleRatio) : '',
             temp: fluctuate(s.temp, 1),
           },
           setting: s,
