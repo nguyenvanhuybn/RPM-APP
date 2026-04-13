@@ -4,9 +4,16 @@
  */
 
 const http = require('http');
+const https = require('https');
 
-const BACKEND_HOST = 'localhost';
-const BACKEND_PORT = 5000;
+// Khi deploy lên Render: BACKEND_URL = https://rpm-backend-xxxx.onrender.com
+// Khi chạy local: BACKEND_URL = http://localhost:5000
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+const url = new URL(BACKEND_URL);
+const BACKEND_HOST = url.hostname;
+const BACKEND_PORT = url.port || (url.protocol === 'https:' ? 443 : 80);
+const USE_HTTPS = url.protocol === 'https:';
+const httpLib = USE_HTTPS ? https : http;
 
 // Cấu hình 6 PLC (tương ứng 6 bể)
 const plcConfigs = [
@@ -81,7 +88,7 @@ function sendPlcData(plc) {
     }
   };
 
-  const req = http.request(options, () => {});
+  const req = httpLib.request(options, () => {});
   req.on('error', () => {}); // Bỏ qua lỗi nếu server chưa kết nối
   req.write(payload);
   req.end();

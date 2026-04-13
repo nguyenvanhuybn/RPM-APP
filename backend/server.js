@@ -86,16 +86,33 @@ app.post('/api/plc-data', (req, res) => {
   res.json({ success: true });
 });
 
-// SSE endpoint cho Web client đăng ký nhận real-time
+// SSE endpoint cho Web client - cố định HTTP/2 proxy của Render
 app.get('/api/stream', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  // Bắt buộc HTTP/1.1 chunked - fix ERR_HTTP2_PROTOCOL_ERROR trên Render
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');        // tắt nginx buffering
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+  res.status(200);
   res.flushHeaders();
+
+  // Gửi comment đầu tiên để mở kết nối ngay
+  res.write(': connected\n\n');
+
   const clientId = Date.now();
   sseClients.push({ id: clientId, res });
-  req.on('close', () => { sseClients = sseClients.filter(c => c.id !== clientId); });
+
+  // Ping mỗi 25 giây để giữ kết nối sống (Render timeout 30s)
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch(e) { clearInterval(heartbeat); }
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    sseClients = sseClients.filter(c => c.id !== clientId);
+  });
 });
 
 // ==========================================
@@ -221,4 +238,80 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server API đang chạy trên port: ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server API đang chạy trên port: ${PORT}`);
+
+  // ==========================================
+  // INLINE PLC SIMULATOR (cho Render deploy)
+  // Trên Render free plan chỉ có 1 web service,
+  // nên nhúng PLC giả lập chạy ngay trong server
+  // ==========================================
+  if (process.env.ENABLE_PLC_SIM === 'true' || process.env.NODE_ENV === 'production') {
+    console.log('\n🛠️  KHỞI ĐỘNG GIẢ LẬP PLC NỘI TUYẾN (INLINE)...');
+
+    const tankSettings = {
+      1: { revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, temp: 52 },
+      2: { revA: 120, revV: 10, revT: 110, fwd1A: 200, fwd1V: 10, fwd1T: 45, fwd2A: 200, fwd2V: 12, fwd2T: 120, temp: 55 },
+      3: { revA: 150, revV: 12, revT: 450, fwd1A: 220, fwd1V: 12, fwd1T: 60, fwd2A: 280, fwd2V: 12, fwd2T: 90,  temp: 48 },
+      4: { revA: 180, revV: 14, revT: 200, fwd1A: 250, fwd1V: 13, fwd1T: 60, fwd2A: 300, fwd2V: 13, fwd2T: 150, temp: 50 },
+      5: { revA: 130, revV: 11, revT: 130, fwd1A: 210, fwd1V: 11, fwd1T: 50, fwd2A: 260, fwd2V: 11, fwd2T: 110, temp: 53 },
+      6: { revA: 100, revV: 9,  revT: 100, fwd1A: 180, fwd1V: 9,  fwd1T: 40, fwd2A: 220, fwd2V: 10, fwd2T: 100, temp: 46 },
+    };
+
+    const simPlcs = [
+      { id: 1, tank: 'Bể 1', product: 'SP-01', target: 2500, actual: 2300 },
+      { id: 2, tank: 'Bể 2', product: 'SP-02', target: 1500, actual: 1000 },
+      { id: 3, tank: 'Bể 3', product: 'SP-10', target: 1800, actual: 1100 },
+      { id: 4, tank: 'Bể 4', product: 'SP-04', target: 2200, actual: 700  },
+      { id: 5, tank: 'Bể 5', product: 'SS-07', target: 2300, actual: 1800 },
+      { id: 6, tank: 'Bể 6', product: 'SP-05', target: 1200, actual: 800  },
+    ];
+
+    function fluctuate(base, delta) {
+      return parseFloat((base + (Math.random() * delta * 2 - delta)).toFixed(2));
+    }
+
+    simPlcs.forEach(plc => {
+      console.log(`  ✅ PLC-0${plc.id} | ${plc.tank} | ${plc.product}`);
+    });
+    console.log(`  Tốc độ: 1 tín hiệu/giây × ${simPlcs.length} PLC\n`);
+
+    // Mỗi giây, inject trực tiếp data vào in-memory state (không qua HTTP)
+    setInterval(() => {
+      simPlcs.forEach(plc => {
+        if (plc.actual < plc.target) {
+          plc.actual += Math.floor(Math.random() * 3) + 1;
+        }
+        const s = tankSettings[plc.id];
+        const cfg = plcConfigs.find(p => p.id === plc.id);
+        if (!cfg || cfg.status !== 'connected') return;
+
+        tankState[plc.id] = {
+          id: plc.id, name: plc.tank, status: 'ON', product: plc.product,
+          actual: {
+            revA: fluctuate(s.revA, 3), revV: fluctuate(s.revV, 0.5), revT: '',
+            fwd1A: fluctuate(s.fwd1A, 4), fwd1V: fluctuate(s.fwd1V, 0.4), fwd1T: '',
+            fwd2A: fluctuate(s.fwd2A, 5), fwd2V: fluctuate(s.fwd2V, 0.5), fwd2T: '',
+            temp: fluctuate(s.temp, 1),
+          },
+          setting: s,
+        };
+        dashboardState[plc.id] = {
+          id: plc.id, product: plc.product, tank: plc.tank,
+          target: plc.target, actual: plc.actual,
+          progress: Math.min(100, Math.floor((plc.actual / plc.target) * 100)),
+          status: 'ĐANG HOẠT ĐỘNG', timeIn: '17:05', timeEst: '',
+        };
+      });
+
+      // Broadcast SSE
+      const payload = JSON.stringify({
+        tanks: Object.values(tankState),
+        dashboard: Object.values(dashboardState),
+      });
+      sseClients.forEach(client => {
+        try { client.res.write(`data: ${payload}\n\n`); } catch(e) {}
+      });
+    }, 1000);
+  }
+});
