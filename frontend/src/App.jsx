@@ -4,7 +4,7 @@ import './index.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('reports'); // Highlight default to see changes immediately
+  const [activeTab, setActiveTab] = useState('overview');
 
   // --- DASHBOARD DATA ---
   const [dashboardCards, setDashboardCards] = useState([
