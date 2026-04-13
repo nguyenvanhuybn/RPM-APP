@@ -73,6 +73,7 @@ const initDB = async () => {
     // Seed default products
     const res = await client.query('SELECT count(*) FROM products');
     if (res.rows[0].count == 0) {
+      await client.query(`
         INSERT INTO products (product_code, product_name, actual_quantity, target_quantity, standard_conditions) VALUES
         ('SP-01', 'Sản phẩm 1', 2300, 2500, '{"revA": 150, "revV": 12, "revT": 120, "fwd1A": 220, "fwd1V": 12, "fwd1T": 45, "fwd2A": 280, "fwd2V": 12, "fwd2T": 120, "temp": 52}'),
         ('SP-02', 'Sản phẩm 2', 1000, 1500, '{"revA": 120, "revV": 10, "revT": 110, "fwd1A": 200, "fwd1V": 10, "fwd1T": 45, "fwd2A": 200, "fwd2V": 12, "fwd2T": 120, "temp": 55}'),
