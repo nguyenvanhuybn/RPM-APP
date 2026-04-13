@@ -269,6 +269,46 @@ app.get('/api/logs', async (req, res) => {
   }
 });
 
+// Thêm mới Sản Phẩm
+app.post('/api/products', async (req, res) => {
+  const { product_code, product_name, target_quantity, standard_conditions } = req.body;
+  if (!product_code) return res.status(400).json({ success: false, error: 'Thiếu mã sản phẩm' });
+  try {
+    const result = await pool.query(
+      'INSERT INTO products (product_code, product_name, target_quantity, actual_quantity, standard_conditions) VALUES ($1, $2, $3, 0, $4) RETURNING *',
+      [product_code, product_name || product_code, target_quantity || 0, standard_conditions ? JSON.stringify(standard_conditions) : null]
+    );
+    await pool.query(
+      'INSERT INTO system_logs (tank_name, product_code, event_type, message) VALUES ($1, $2, $3, $4)',
+      ['-', product_code, 'ADD_PRODUCT', `Thêm mới mã sản phẩm: ${product_code} - ${product_name}`]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Cập nhật Sản Phẩm
+app.put('/api/products/:code', async (req, res) => {
+  const code = req.params.code;
+  const { product_name, target_quantity, standard_conditions } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE products SET product_name = $1, target_quantity = $2, standard_conditions = $3 WHERE product_code = $4 RETURNING *',
+      [product_name || code, target_quantity || 0, standard_conditions ? JSON.stringify(standard_conditions) : null, code]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Không tìm thấy sản phẩm' });
+    await pool.query(
+      'INSERT INTO system_logs (tank_name, product_code, event_type, message) VALUES ($1, $2, $3, $4)',
+      ['-', code, 'UPDATE_PRODUCT', `Cập nhật thông số mã: ${code}`]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
 // 1. Xem danh sách Bể Mạ cùng trạng thái
 app.get('/api/tanks', async (req, res) => {
   try {

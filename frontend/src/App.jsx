@@ -23,26 +23,39 @@ function App() {
     { id: 3, name: 'Bể 3', status: 'ON', product: 'SP-10', actual: { revA: 150.77, revV: 12.89, revT: '', fwd1A: 219.18, fwd1V: 12.84, fwd1T: '', fwd2A: 280.09, fwd2V: 12.47, fwd2T: '', temp: 48 }, setting: { revA: 150, revV: 12, revT: 450, fwd1A: 220, fwd1V: 12, fwd1T: 60, fwd2A: 280, fwd2V: 12, fwd2T: 90, temp: 48 } },
   ]);
 
-  const [products, setProducts] = useState([
-    { id: 'SP-01', code: 'SP-01', volume: 2500, temp: 52, revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, updated: '16h00, 11/04/2026' }
-  ]);
+  const [products, setProducts] = useState([]);
   const [productsList, setProductsList] = useState(['SP-01', 'SP-02', 'SP-03', 'SP-04', 'SP-05', 'AB-06', 'SS-07', 'PP-08', 'SP-09', 'SP-10']);
   const [dbLogs, setDbLogs] = useState([]);
 
+  const refreshProducts = () => {
+    fetch(`${API_URL}/api/products`).then(r => r.json()).then(d => {
+      if (d.success) {
+        setProducts(d.data.map(p => ({
+          id: p.product_code,
+          code: p.product_code,
+          name: p.product_name,
+          volume: p.actual_quantity,
+          target: p.target_quantity,
+          updated: new Date(p.created_at).toLocaleString(),
+          ...(p.standard_conditions || {})
+        })));
+        setProductsList(d.data.map(p => p.product_code));
+      }
+    }).catch(() => {});
+  };
+
   React.useEffect(() => {
-    fetch(`${API_URL}/api/products`).then(r=>r.json()).then(d => {
-       if (d.success) setProductsList(d.data.map(p => p.product_code));
-    }).catch(()=>{});
+    refreshProducts();
 
-    fetch(`${API_URL}/api/logs`).then(r=>r.json()).then(d => {
-       if (d.success) setDbLogs(d.data);
-    }).catch(()=>{});
+    fetch(`${API_URL}/api/logs`).then(r => r.json()).then(d => {
+      if (d.success) setDbLogs(d.data);
+    }).catch(() => {});
 
-    // Also set an interval to refresh logs every 5s
+    // Refresh logs every 5s
     const logInterval = setInterval(() => {
-      fetch(`${API_URL}/api/logs`).then(r=>r.json()).then(d => {
-         if (d.success) setDbLogs(d.data);
-      }).catch(()=>{});
+      fetch(`${API_URL}/api/logs`).then(r => r.json()).then(d => {
+        if (d.success) setDbLogs(d.data);
+      }).catch(() => {});
     }, 5000);
     return () => clearInterval(logInterval);
   }, []);
@@ -299,7 +312,7 @@ function App() {
              <input type="text" placeholder="Tìm kiếm theo mã sp" className="search-input" />
          </div>
          <button className="btn-primary premium-hover" onClick={() => {
-           setEditingProduct({ id: null, code: '', volume: '', temp: '', revA: '', revV: '', revT: '', fwd1A: '', fwd1V: '', fwd1T: '', fwd2A: '', fwd2V: '', fwd2T: '' });
+           setEditingProduct({ id: null, code: '', name: '', target: '', volume: '', temp: '', revA: '', revV: '', revT: '', fwd1A: '', fwd1V: '', fwd1T: '', fwd2A: '', fwd2V: '', fwd2T: '' });
            setModalType('PRODUCT');
          }}>+ THÊM MỚI</button>
       </div>
@@ -309,7 +322,8 @@ function App() {
           <thead>
             <tr>
               <th rowSpan="2" style={{width: '90px'}}>MÃ SP</th>
-              <th rowSpan="2" style={{width: '90px'}}>SẢN LƯỢNG</th>
+              <th rowSpan="2" style={{width: '130px'}}>TÊN SẢN PHẨM</th>
+              <th rowSpan="2" style={{width: '140px'}}>SẢN LƯỢNG (Thực/Mục tiêu)</th>
               <th colSpan="3">MẠ NGƯỢC</th>
               <th colSpan="3">MẠ THUẬN 1</th>
               <th colSpan="3">MẠ THUẬN 2</th>
@@ -327,7 +341,8 @@ function App() {
             {products.map(p => (
               <tr key={p.id} className="actual-row premium-tr">
                 <td className="tank-name" style={{color: 'var(--accent-color)'}}>{p.code}</td>
-                <td style={{fontWeight: 600}}>{p.volume}</td>
+                <td style={{fontSize:'12px', color: 'var(--text-secondary)'}}>{p.name || '-'}</td>
+                <td style={{fontWeight: 600}}>{p.volume} / {p.target}</td>
                 <td>{p.revA}</td><td>{p.revV}</td><td>{p.revT}</td>
                 <td>{p.fwd1A}</td><td>{p.fwd1V}</td><td>{p.fwd1T}</td>
                 <td>{p.fwd2A}</td><td>{p.fwd2V}</td><td>{p.fwd2T}</td>
@@ -335,7 +350,8 @@ function App() {
                 <td style={{fontSize: '12px', color: 'var(--text-secondary)'}}>{p.updated}</td>
                 <td>
                   <button className="icon-btn-edit" onClick={() => {
-                    setEditingProduct({...p}); setModalType('PRODUCT');
+                    setEditingProduct({ ...p, ...p.standard_conditions });
+                    setModalType('PRODUCT');
                   }}>📝</button>
                 </td>
               </tr>
@@ -613,15 +629,19 @@ function App() {
               <div className="form-row-3" style={{marginBottom: '24px'}}>
                 <div className="form-group">
                   <label>MÃ SP</label>
-                  <input type="text" value={editingProduct.code} onChange={e=>setEditingProduct({...editingProduct, code: e.target.value})} placeholder="VD: SP-001" className="form-input" />
+                  <input type="text" value={editingProduct.code} onChange={e=>setEditingProduct({...editingProduct, code: e.target.value})} placeholder="VD: SP-001" className="form-input" disabled={!!editingProduct.id} />
                 </div>
                 <div className="form-group">
-                  <label>SẢN LƯỢNG</label>
-                  <input type="number" value={editingProduct.volume} onChange={e=>setEditingProduct({...editingProduct, volume: e.target.value})} placeholder="0" className="form-input" />
+                  <label>TÊN SẢN PHẨM</label>
+                  <input type="text" value={editingProduct.name || ''} onChange={e=>setEditingProduct({...editingProduct, name: e.target.value})} placeholder="VD: Sản phẩm A" className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label>MỤC TIÊU SẢN LƯỢNG</label>
+                  <input type="number" value={editingProduct.target || ''} onChange={e=>setEditingProduct({...editingProduct, target: e.target.value})} placeholder="0" className="form-input" />
                 </div>
                 <div className="form-group">
                   <label>NHIỆT ĐỘ (°C)</label>
-                  <input type="number" value={editingProduct.temp} onChange={e=>setEditingProduct({...editingProduct, temp: e.target.value})} placeholder="0" className="form-input" />
+                  <input type="number" value={editingProduct.temp || ''} onChange={e=>setEditingProduct({...editingProduct, temp: e.target.value})} placeholder="0" className="form-input" />
                 </div>
               </div>
 
@@ -654,15 +674,31 @@ function App() {
             </div>
             <div className="modal-footer">
               <button className="btn-modal-cancel" onClick={() => setModalType('NONE')}>HUỶ</button>
-              <button className="btn-modal-save premium-hover" onClick={() => {
-                if(!editingProduct.code) return alert("Vui lòng nhập Mã SP");
-                const nowStr = '16h00, 13/04/2026';
-                if (editingProduct.id) {
-                   setProducts(products.map(p => p.id === editingProduct.id ? {...editingProduct, updated: nowStr} : p));
-                } else {
-                   setProducts([...products, { ...editingProduct, id: editingProduct.code, updated: nowStr }]);
+              <button className="btn-modal-save premium-hover" onClick={async () => {
+                if (!editingProduct.code) return alert('Vui lòng nhập Mã SP');
+                const body = {
+                  product_code: editingProduct.code,
+                  product_name: editingProduct.name || editingProduct.code,
+                  target_quantity: parseInt(editingProduct.target || editingProduct.volume || 0),
+                  standard_conditions: {
+                    temp: editingProduct.temp,
+                    revA: editingProduct.revA, revV: editingProduct.revV, revT: editingProduct.revT,
+                    fwd1A: editingProduct.fwd1A, fwd1V: editingProduct.fwd1V, fwd1T: editingProduct.fwd1T,
+                    fwd2A: editingProduct.fwd2A, fwd2V: editingProduct.fwd2V, fwd2T: editingProduct.fwd2T,
+                  }
+                };
+                const isEdit = !!editingProduct.id;
+                const url = isEdit ? `${API_URL}/api/products/${editingProduct.code}` : `${API_URL}/api/products`;
+                const method = isEdit ? 'PUT' : 'POST';
+                try {
+                  const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                  const data = await res.json();
+                  if (!data.success) { alert(`Lỗi: ${data.error}`); return; }
+                  refreshProducts();
+                  setModalType('NONE');
+                } catch(e) {
+                  alert('Không thể kết nối API. Kiểm tra backend.');
                 }
-                setModalType('NONE');
               }}>💾 LƯU THÔNG TIN</button>
             </div>
           </div>
