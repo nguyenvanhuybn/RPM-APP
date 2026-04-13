@@ -3,6 +3,7 @@
 :root {
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --accent-color: #3b82f6;
@@ -71,9 +72,15 @@ body {
   gap: 12px;
   padding: 12px 16px;
   text-decoration: none;
+  background: transparent;
+  border: none;
   color: var(--text-secondary);
   font-weight: 500;
+  font-size: 15px;
   border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
   transition: all 0.3s ease;
 }
 
@@ -294,16 +301,11 @@ body {
 }
 
 /* Dynamic glow effects based on status */
-.tank-card.status-ON {
-  border-top: 4px solid var(--success);
-}
-.tank-card.status-OFF {
-  border-top: 4px solid var(--text-secondary);
-  opacity: 0.8;
-}
-.tank-card.status-ERROR {
-  border-top: 4px solid var(--danger);
-  animation: pulse-red 2s infinite;
+.tank-card.status-ON { border-top: 4px solid var(--success); }
+.tank-card.status-OFF { border-top: 4px solid var(--text-secondary); opacity: 0.8; }
+.tank-card.status-ERROR { 
+  border-top: 4px solid var(--danger); 
+  animation: pulse-red 2s infinite; 
 }
 
 @keyframes pulse-red {
@@ -332,29 +334,24 @@ body {
   letter-spacing: 0.5px;
 }
 
-.status-badge.ON {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--success);
-  border: 1px solid var(--success);
-}
+.status-badge.ON { background-color: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); }
+.status-badge.OFF { background-color: rgba(148, 163, 184, 0.15); color: var(--text-secondary); border: 1px solid var(--text-secondary); }
+.status-badge.ERROR { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); }
 
-.status-badge.OFF {
-  background-color: rgba(148, 163, 184, 0.15);
-  color: var(--text-secondary);
-  border: 1px solid var(--text-secondary);
-}
-
-.status-badge.ERROR {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: var(--danger);
-  border: 1px solid var(--danger);
+.badge-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .tank-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 24px;
 }
 
 .data-row {
@@ -364,30 +361,96 @@ body {
   font-size: 14px;
 }
 
-.data-lbl {
-  color: var(--text-secondary);
-}
-
-.data-val {
-  font-weight: 600;
-}
-
+.data-lbl { color: var(--text-secondary); }
+.data-val { font-weight: 600; }
 .data-val.temp { color: #fca5a5; }
 .data-val.ph { color: #6ee7b7; }
 
-.btn-details {
+/* Tabs Expansion & Tables */
+.tab-content {
+  animation: fadeIn 0.4s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.data-table {
   width: 100%;
+  border-collapse: collapse;
+  margin-top: 24px;
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.data-table th, .data-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--bg-tertiary);
+  font-size: 14px;
+}
+
+.data-table th {
+  background-color: rgba(0,0,0,0.2);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.data-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.data-table td.highlight-green {
+  color: var(--success);
+}
+
+/* Buttons */
+.btn-sm {
   background-color: transparent;
   border: 1px solid var(--gray-ui);
   color: var(--text-primary);
-  padding: 10px;
-  border-radius: 8px;
-  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.btn-details:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: var(--text-secondary);
+.btn-sm:hover {
+  background-color: var(--gray-ui);
+}
+
+.btn-resolve {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.btn-resolve:hover {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 10px var(--accent-glow);
+  transition: transform 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
 }
