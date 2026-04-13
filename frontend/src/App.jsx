@@ -116,7 +116,19 @@ function App() {
           const data = JSON.parse(event.data);
           const { tanks, dashboard, plcConfigs: cfgs } = data;
           if (tanks && tanks.length > 0) setTanks(tanks);
-          if (dashboard && dashboard.length > 0) setDashboardCards(dashboard);
+          if (dashboard && dashboard.length > 0) {
+              setDashboardCards(dashboard);
+              setProducts(prev => {
+                  if (prev.length === 0) return prev;
+                  return prev.map(p => {
+                      const activeDash = dashboard.find(d => d.product === p.code);
+                      if (activeDash && activeDash.actual !== p.volume) {
+                          return { ...p, volume: activeDash.actual, target: activeDash.target };
+                      }
+                      return p;
+                  });
+              });
+          }
           if (cfgs) setPlcConfigs(cfgs);
           // Track last pulse time per plcId
           if (tanks) {
