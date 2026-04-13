@@ -54,6 +54,18 @@ function App() {
   const [modalType, setModalType] = useState('NONE'); 
   const [editingTank, setEditingTank] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [editingPlc, setEditingPlc] = useState(null);
+
+  // PLC Config state
+  const [plcConfigs, setPlcConfigs] = useState([
+    { id: 1, name: 'PLC-01', tank: 'Bể 1', ip: '192.168.1.101', port: 502, product: 'SP-01', status: 'connected' },
+    { id: 2, name: 'PLC-02', tank: 'Bể 2', ip: '192.168.1.102', port: 502, product: 'SP-02', status: 'connected' },
+    { id: 3, name: 'PLC-03', tank: 'Bể 3', ip: '192.168.1.103', port: 502, product: 'SP-10', status: 'connected' },
+    { id: 4, name: 'PLC-04', tank: 'Bể 4', ip: '192.168.1.104', port: 502, product: 'SP-04', status: 'connected' },
+    { id: 5, name: 'PLC-05', tank: 'Bể 5', ip: '192.168.1.105', port: 502, product: 'SS-07', status: 'connected' },
+    { id: 6, name: 'PLC-06', tank: 'Bể 6', ip: '192.168.1.106', port: 502, product: 'SP-05', status: 'connected' },
+  ]);
+  const [lastPulse, setLastPulse] = useState({});
 
   const getProgressColor = (pct) => {
     if (pct >= 70) return 'success';
@@ -67,9 +79,18 @@ function App() {
     
     sse.onmessage = (event) => {
        try {
-          const { tanks, dashboard } = JSON.parse(event.data);
-          if(tanks) setTanks(tanks);
-          if(dashboard) setDashboardCards(dashboard);
+          const data = JSON.parse(event.data);
+          const { tanks, dashboard, plcConfigs: cfgs } = data;
+          if (tanks && tanks.length > 0) setTanks(tanks);
+          if (dashboard && dashboard.length > 0) setDashboardCards(dashboard);
+          if (cfgs) setPlcConfigs(cfgs);
+          // Track last pulse time per plcId
+          if (tanks) {
+            const now = Date.now();
+            const pulse = {};
+            tanks.forEach(t => { pulse[t.id] = now; });
+            setLastPulse(prev => ({ ...prev, ...pulse }));
+          }
        } catch (err) {
           console.error("Lỗi đọc dữ liệu PLC:", err);
        }
@@ -358,6 +379,120 @@ function App() {
     </div>
   );
 
+  const togglePlcConnection = (id) => {
+    fetch(`http://localhost:5000/api/plc/configs/${id}/toggle`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setPlcConfigs(prev => prev.map(p => p.id === id ? data.data : p));
+      })
+      .catch(() => {
+        // Offline mode: toggle locally
+        setPlcConfigs(prev => prev.map(p => p.id === id ? { ...p, status: p.status === 'connected' ? 'disconnected' : 'connected' } : p));
+      });
+  };
+
+  const savePlcConfig = (plc) => {
+    fetch(`http://localhost:5000/api/plc/configs/${plc.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(plc)
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setPlcConfigs(prev => prev.map(p => p.id === plc.id ? data.data : p));
+      })
+      .catch(() => {
+        setPlcConfigs(prev => prev.map(p => p.id === plc.id ? plc : p));
+      })
+      .finally(() => setModalType('NONE'));
+  };
+
+  const renderPLCConfig = () => {
+    const connectedCount = plcConfigs.filter(p => p.status === 'connected').length;
+    return (
+      <div className="tab-content full-width">
+        {/* Header Summary */}
+        <div className="plc-summary-bar">
+          <div className="plc-stat">
+            <span className="plc-stat-num">{plcConfigs.length}</span>
+            <span className="plc-stat-lbl">TỔNG PLC</span>
+          </div>
+          <div className="plc-stat">
+            <span className="plc-stat-num text-success">{connectedCount}</span>
+            <span className="plc-stat-lbl">KẾT NỐI</span>
+          </div>
+          <div className="plc-stat">
+            <span className="plc-stat-num text-warning">{plcConfigs.length - connectedCount}</span>
+            <span className="plc-stat-lbl">NGẮT KẾT NỐI</span>
+          </div>
+          <div className="plc-stat" style={{marginLeft: 'auto'}}>
+            <span className="plc-stat-lbl" style={{fontSize: '12px', color: 'var(--text-secondary)'}}>TỐC ĐỘ TÍN HIỆU</span>
+            <span className="plc-stat-num" style={{fontSize: '20px', color: 'var(--info)'}}>1 Hz</span>
+          </div>
+        </div>
+
+        {/* 6 PLC Cards */}
+        <div className="plc-grid">
+          {plcConfigs.map(plc => {
+            const isConn = plc.status === 'connected';
+            const pulsedRecently = lastPulse[plc.id] && (Date.now() - lastPulse[plc.id]) < 3000;
+            return (
+              <div key={plc.id} className={`plc-card ${isConn ? 'plc-card-on' : 'plc-card-off'}`}>
+                {/* Card Header */}
+                <div className="plc-card-header">
+                  <div className="plc-id-badge">{plc.name}</div>
+                  <div className={`plc-signal-dot ${isConn && pulsedRecently ? 'pulsing' : ''}`}
+                    style={{background: isConn ? 'var(--success)' : '#d1d5db'}}></div>
+                </div>
+
+                {/* Tank Info */}
+                <div className="plc-tank-name">{plc.tank}</div>
+                <div className="plc-product-badge">{plc.product}</div>
+
+                {/* Connection Details */}
+                <div className="plc-conn-info">
+                  <div className="plc-conn-row">
+                    <span className="plc-conn-lbl">IP ĐỊCH CHỈ</span>
+                    <span className="plc-conn-val">{plc.ip}</span>
+                  </div>
+                  <div className="plc-conn-row">
+                    <span className="plc-conn-lbl">MODBUS PORT</span>
+                    <span className="plc-conn-val">{plc.port}</span>
+                  </div>
+                  <div className="plc-conn-row">
+                    <span className="plc-conn-lbl">TRẠNG THÁI</span>
+                    <span className={`plc-status-text ${isConn ? 'text-success' : 'text-muted'}`}>
+                      {isConn ? '● KẾT NỐI' : '● NGẮT'}
+                    </span>
+                  </div>
+                  {isConn && pulsedRecently && (
+                    <div className="plc-conn-row">
+                      <span className="plc-conn-lbl">TÍN HIỆU GẦN NHẤT</span>
+                      <span className="plc-conn-val text-success">✅ Live</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="plc-actions">
+                  <button
+                    className={`plc-btn-toggle ${isConn ? 'btn-disconnect' : 'btn-connect'}`}
+                    onClick={() => togglePlcConnection(plc.id)}
+                  >
+                    {isConn ? '⏹ NGẮT KẾT NỐI' : '▶ KẾT NỐI'}
+                  </button>
+                  <button className="plc-btn-edit" onClick={() => { setEditingPlc({...plc}); setModalType('PLC'); }}>
+                    ⚙️ CẤU HÌNH
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="dashboard-container">
       {/* SIDEBAR */}
@@ -376,6 +511,9 @@ function App() {
             </button>
             <button className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>
               <span className="icon-wrapper">📋</span> BÁO CÁO
+            </button>
+            <button className={`nav-item ${activeTab === 'plc' ? 'active' : ''}`} onClick={() => setActiveTab('plc')}>
+              <span className="icon-wrapper">⚡</span> CẤU HÌNH PLC
             </button>
           </nav>
         </div>
@@ -403,6 +541,7 @@ function App() {
            {activeTab === 'tanks' && renderTanks()}
            {activeTab === 'products' && renderProducts()}
            {activeTab === 'reports' && renderReports()}
+           {activeTab === 'plc' && renderPLCConfig()}
         </div>
       </main>
 
@@ -503,6 +642,53 @@ function App() {
                 }
                 setModalType('NONE');
               }}>💾 LƯU THÔNG TIN</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PLC CONFIG EDIT MODAL */}
+      {modalType === 'PLC' && editingPlc && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{width: '480px'}}>
+            <div className="modal-header">
+              <h3>CẤU HÌNH {editingPlc.name}</h3>
+              <button className="close-btn" onClick={() => setModalType('NONE')}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>TÊN PLC</label>
+                  <input type="text" value={editingPlc.name} onChange={e => setEditingPlc({...editingPlc, name: e.target.value})} className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label>BỂ MẠ TƯƠNG ỨNG</label>
+                  <input type="text" value={editingPlc.tank} readOnly className="form-input" style={{background:'#f3f4f6'}} />
+                </div>
+                <div className="form-group">
+                  <label>MÃ SẢN PHẨM ĐANG CHẠY</label>
+                  <select value={editingPlc.product} onChange={e => setEditingPlc({...editingPlc, product: e.target.value})} className="form-input select-input">
+                    {productsList.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-group-section premium-card" style={{marginTop: '16px'}}>
+                <div className="form-group-title"><span className="dot"></span> KẾT NỐI MODBUS TCP/IP</div>
+                <div className="form-row" style={{gap: '16px'}}>
+                  <div className="form-group">
+                    <label>IP ĐỊCH CHỈ</label>
+                    <input type="text" value={editingPlc.ip} onChange={e => setEditingPlc({...editingPlc, ip: e.target.value})} className="form-input" placeholder="192.168.1.101" />
+                  </div>
+                  <div className="form-group">
+                    <label>MODBUS PORT</label>
+                    <input type="number" value={editingPlc.port} onChange={e => setEditingPlc({...editingPlc, port: parseInt(e.target.value)})} className="form-input" placeholder="502" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-modal-cancel" onClick={() => setModalType('NONE')}>HỤỸ</button>
+              <button className="btn-modal-save premium-hover" onClick={() => savePlcConfig(editingPlc)}>💾 LƯU CẤU HÌNH</button>
             </div>
           </div>
         </div>

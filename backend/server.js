@@ -21,34 +21,101 @@ pool.connect()
 
 let sseClients = [];
 
+// In-memory state: Tank data aggregated from all PLCs
+let tankState = {};
+let dashboardState = {};
+
+// PLC Configuration stored in memory (in production, use DB)
+let plcConfigs = [
+  { id: 1, name: 'PLC-01', tank: 'Bể 1', ip: '192.168.1.101', port: 502, product: 'SP-01', status: 'connected' },
+  { id: 2, name: 'PLC-02', tank: 'Bể 2', ip: '192.168.1.102', port: 502, product: 'SP-02', status: 'connected' },
+  { id: 3, name: 'PLC-03', tank: 'Bể 3', ip: '192.168.1.103', port: 502, product: 'SP-10', status: 'connected' },
+  { id: 4, name: 'PLC-04', tank: 'Bể 4', ip: '192.168.1.104', port: 502, product: 'SP-04', status: 'connected' },
+  { id: 5, name: 'PLC-05', tank: 'Bể 5', ip: '192.168.1.105', port: 502, product: 'SS-07', status: 'connected' },
+  { id: 6, name: 'PLC-06', tank: 'Bể 6', ip: '192.168.1.106', port: 502, product: 'SP-05', status: 'connected' },
+];
+
 // ==========================================
-// ROUTES: WEBSOCKET/SSE CHO GIẢ LẬP PLC (REALTIME)
+// ROUTES: REAL-TIME PLC DATA (SSE)
 // ==========================================
 
-// API nhận dữ liệu từ PLC Simulator
-app.post('/api/plc-data', (req, res) => {
-    const { tanks, dashboard } = req.body;
-    // Broadcast data cho tất cả màn hình Web đang mở
-    const payload = JSON.stringify({ tanks, dashboard });
-    sseClients.forEach(client => {
-        client.res.write(`data: ${payload}\n\n`);
-    });
-    res.json({ success: true });
+// Nhận data từ từng PLC đơn lẻ
+app.post('/api/plc-data-single', (req, res) => {
+  const { plcId, tank, dashboard } = req.body;
+  const cfg = plcConfigs.find(p => p.id === plcId);
+  // Chỉ xử lý nếu PLC đang ở trạng thái connected
+  if (!cfg || cfg.status !== 'connected') {
+    return res.json({ success: false, message: 'PLC disconnected or not found' });
+  }
+  tankState[plcId] = tank;
+  dashboardState[plcId] = dashboard;
+
+  // Broadcast to all SSE clients
+  const payload = JSON.stringify({
+    tanks: Object.values(tankState),
+    dashboard: Object.values(dashboardState),
+  });
+  sseClients.forEach(client => client.res.write(`data: ${payload}\n\n`));
+  res.json({ success: true });
 });
 
-// Clients (Web) kết nối vào đây để nghe dữ liệu thời gian thực
+// [Cũ] endpoint batch (giữ lại để tương thích ngược)
+app.post('/api/plc-data', (req, res) => {
+  const { tanks, dashboard } = req.body;
+  const payload = JSON.stringify({ tanks, dashboard });
+  sseClients.forEach(client => client.res.write(`data: ${payload}\n\n`));
+  res.json({ success: true });
+});
+
+// SSE endpoint cho Web client đăng ký nhận real-time
 app.get('/api/stream', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders(); 
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+  const clientId = Date.now();
+  sseClients.push({ id: clientId, res });
+  req.on('close', () => { sseClients = sseClients.filter(c => c.id !== clientId); });
+});
 
-    const clientId = Date.now();
-    sseClients.push({ id: clientId, res });
+// ==========================================
+// ROUTES: PLC CONFIG MANAGEMENT
+// ==========================================
 
-    req.on('close', () => {
-        sseClients = sseClients.filter(c => c.id !== clientId);
-    });
+// Lấy danh sách cấu hình PLC
+app.get('/api/plc/configs', (req, res) => {
+  res.json({ success: true, data: plcConfigs });
+});
+
+// Cập nhật cấu hình 1 PLC (ip, port, product)
+app.put('/api/plc/configs/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const { ip, port, product, name } = req.body;
+  plcConfigs = plcConfigs.map(p => p.id === id ? { ...p, ip: ip||p.ip, port: port||p.port, product: product||p.product, name: name||p.name } : p);
+  res.json({ success: true, data: plcConfigs.find(p => p.id === id) });
+});
+
+// Bật/Tắt kết nối 1 PLC
+app.post('/api/plc/configs/:id/toggle', (req, res) => {
+  const id = parseInt(req.params.id);
+  plcConfigs = plcConfigs.map(p => {
+    if (p.id === id) {
+      const newStatus = p.status === 'connected' ? 'disconnected' : 'connected';
+      if (newStatus === 'disconnected') {
+        // Xóa dữ liệu của PLC đó khỏi state
+        delete tankState[id];
+        delete dashboardState[id];
+      }
+      return { ...p, status: newStatus };
+    }
+    return p;
+  });
+  const cfg = plcConfigs.find(p => p.id === id);
+  // Broadcast lại state mới sau khi ngắt
+  const payload = JSON.stringify({ tanks: Object.values(tankState), dashboard: Object.values(dashboardState), plcConfigs });
+  sseClients.forEach(client => client.res.write(`data: ${payload}\n\n`));
+  res.json({ success: true, data: cfg });
 });
 
 // ==========================================
