@@ -418,7 +418,7 @@ function App() {
   );
 
   const togglePlcConnection = (id) => {
-    fetch(`http://localhost:5000/api/plc/configs/${id}/toggle`, { method: 'POST' })
+    fetch(`${API_URL}/api/plc/configs/${id}/toggle`, { method: 'POST' })
       .then(r => r.json())
       .then(data => {
         if (data.success) setPlcConfigs(prev => prev.map(p => p.id === id ? data.data : p));
@@ -430,7 +430,7 @@ function App() {
   };
 
   const savePlcConfig = (plc) => {
-    fetch(`http://localhost:5000/api/plc/configs/${plc.id}`, {
+    fetch(`${API_URL}/api/plc/configs/${plc.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(plc)
