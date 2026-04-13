@@ -120,7 +120,7 @@ const tankSettings = {
 };
 
 function fluctuate(base, delta) {
-  return parseFloat((base + (Math.random() * delta * 2 - delta)).toFixed(2));
+  return parseFloat((parseFloat(base || 0) + (Math.random() * delta * 2 - delta)).toFixed(2));
 }
 
 let sseClients = [];
