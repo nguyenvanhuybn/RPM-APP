@@ -26,7 +26,26 @@ function App() {
   const [products, setProducts] = useState([
     { id: 'SP-01', code: 'SP-01', volume: 2500, temp: 52, revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, updated: '16h00, 11/04/2026' }
   ]);
-  const productsList = ['SP-01', 'SP-02', 'SP-03', 'SP-04', 'SP-05', 'AB-06', 'SS-07', 'PP-08', 'SP-09', 'SP-10'];
+  const [productsList, setProductsList] = useState(['SP-01', 'SP-02', 'SP-03', 'SP-04', 'SP-05', 'AB-06', 'SS-07', 'PP-08', 'SP-09', 'SP-10']);
+  const [dbLogs, setDbLogs] = useState([]);
+
+  React.useEffect(() => {
+    fetch(`${API_URL}/api/products`).then(r=>r.json()).then(d => {
+       if (d.success) setProductsList(d.data.map(p => p.product_code));
+    }).catch(()=>{});
+
+    fetch(`${API_URL}/api/logs`).then(r=>r.json()).then(d => {
+       if (d.success) setDbLogs(d.data);
+    }).catch(()=>{});
+
+    // Also set an interval to refresh logs every 5s
+    const logInterval = setInterval(() => {
+      fetch(`${API_URL}/api/logs`).then(r=>r.json()).then(d => {
+         if (d.success) setDbLogs(d.data);
+      }).catch(()=>{});
+    }, 5000);
+    return () => clearInterval(logInterval);
+  }, []);
 
   // --- REPORT DATA ---
   const [reportTab, setReportTab] = useState('performance');
@@ -130,8 +149,9 @@ function App() {
                   <span className="vol-val">{card.actual} / {card.target}</span>
                 </div>
                 <div className="progress-bar-bg">
-                  <div className={`progress-bar-fill bg-${colorType}`} style={{width: `${(card.actual/card.target)*100}%`}}></div>
+                  <div className={`progress-bar-fill bg-${colorType}`} style={{width: `${card.cycleProgress || 0}%`, transition: 'width 1s linear'}}></div>
                 </div>
+                <div style={{fontSize: '11px', textAlign: 'right', marginTop: '4px', fontWeight: 600, color: 'var(--text-secondary)'}}>Chu kỳ mẻ: {card.cycleProgress || 0}%</div>
               </div>
               <div className="dash-card-footer">
                 <div className="time-block">
@@ -218,17 +238,17 @@ function App() {
                  </tr>
                </thead>
                <tbody>
-                 {activityLogs.map((log) => (
+                 {dbLogs.map((log) => (
                    <tr key={log.id} className="premium-tr">
-                     <td style={{color: 'var(--text-secondary)', fontWeight: 600}}>{log.time}</td>
-                     <td className="tank-name">{log.tank}</td>
+                     <td style={{color: 'var(--text-secondary)', fontWeight: 600}}>{new Date(log.created_at).toLocaleString()}</td>
+                     <td className="tank-name">{log.tank_name}</td>
                      <td>
-                        <span className={`status-pill ${log.action.includes('ON')||log.action.includes('IN') ? 'pill-success' : 'pill-warning'}`}>
-                          {log.action}
+                        <span className={`status-pill ${log.event_type.includes('COMPLETED') ? 'pill-success' : 'pill-warning'}`}>
+                          {log.event_type === 'CYCLE_COMPLETED' ? 'HOÀN THÀNH 100%' : 'ĐỔI MÃ SP'}
                         </span>
                      </td>
-                     <td style={{fontWeight: 700}}>{log.product}</td>
-                     <td style={{textAlign: 'left'}}>{log.detail}</td>
+                     <td style={{fontWeight: 700}}>{log.product_code}</td>
+                     <td style={{textAlign: 'left'}}>{log.message}</td>
                    </tr>
                  ))}
                </tbody>

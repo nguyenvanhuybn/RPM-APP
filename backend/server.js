@@ -38,6 +38,73 @@ pool.connect()
   .then(() => console.log("Connected to PostgreSQL successfully!"))
   .catch(err => console.error("PostgreSQL connection error:", err));
 
+// Database initialization
+const initDB = async () => {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        product_code VARCHAR(50) UNIQUE NOT NULL,
+        product_name VARCHAR(100) NOT NULL,
+        actual_quantity INT DEFAULT 0,
+        target_quantity INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS system_logs (
+        id SERIAL PRIMARY KEY,
+        tank_name VARCHAR(50),
+        product_code VARCHAR(50),
+        event_type VARCHAR(50),
+        message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    // Seed default products
+    const res = await client.query('SELECT count(*) FROM products');
+    if (res.rows[0].count == 0) {
+      await client.query(`
+        INSERT INTO products (product_code, product_name, actual_quantity, target_quantity) VALUES
+        ('SP-01', 'Sản phẩm 1', 2300, 2500),
+        ('SP-02', 'Sản phẩm 2', 1000, 1500),
+        ('SP-10', 'Sản phẩm 10', 1100, 1800),
+        ('SP-04', 'Sản phẩm 4', 700, 2200),
+        ('SS-07', 'Sản phẩm 7', 1800, 2300),
+        ('SP-05', 'Sản phẩm 5', 800, 1200)
+      `);
+    }
+  } catch (err) {
+    console.log("DB init error", err.message);
+  } finally {
+    client.release();
+  }
+};
+initDB();
+
+let simPlcs = [
+  { id: 1, tank: 'Bể 1', product: 'SP-01', target: 2500, actual: 2300, cycleProgress: 0 },
+  { id: 2, tank: 'Bể 2', product: 'SP-02', target: 1500, actual: 1000,  cycleProgress: 0 },
+  { id: 3, tank: 'Bể 3', product: 'SP-10', target: 1800, actual: 1100,  cycleProgress: 0 },
+  { id: 4, tank: 'Bể 4', product: 'SP-04', target: 2200, actual: 700,   cycleProgress: 0 },
+  { id: 5, tank: 'Bể 5', product: 'SS-07', target: 2300, actual: 1800,  cycleProgress: 0 },
+  { id: 6, tank: 'Bể 6', product: 'SP-05', target: 1200, actual: 800,   cycleProgress: 0 },
+];
+
+const tankSettings = {
+  1: { revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, temp: 52 },
+  2: { revA: 120, revV: 10, revT: 110, fwd1A: 200, fwd1V: 10, fwd1T: 45, fwd2A: 200, fwd2V: 12, fwd2T: 120, temp: 55 },
+  3: { revA: 150, revV: 12, revT: 450, fwd1A: 220, fwd1V: 12, fwd1T: 60, fwd2A: 280, fwd2V: 12, fwd2T: 90,  temp: 48 },
+  4: { revA: 180, revV: 14, revT: 200, fwd1A: 250, fwd1V: 13, fwd1T: 60, fwd2A: 300, fwd2V: 13, fwd2T: 150, temp: 50 },
+  5: { revA: 130, revV: 11, revT: 130, fwd1A: 210, fwd1V: 11, fwd1T: 50, fwd2A: 260, fwd2V: 11, fwd2T: 110, temp: 53 },
+  6: { revA: 100, revV: 9,  revT: 100, fwd1A: 180, fwd1V: 9,  fwd1T: 40, fwd2A: 220, fwd2V: 10, fwd2T: 100, temp: 46 },
+};
+
+function fluctuate(base, delta) {
+  return parseFloat((base + (Math.random() * delta * 2 - delta)).toFixed(2));
+}
+
 let sseClients = [];
 
 // In-memory state: Tank data aggregated from all PLCs
@@ -128,7 +195,31 @@ app.get('/api/plc/configs', (req, res) => {
 app.put('/api/plc/configs/:id', (req, res) => {
   const id = parseInt(req.params.id);
   const { ip, port, product, name } = req.body;
+  const oldCfg = plcConfigs.find(p => p.id === id);
+  const isProductChanged = oldCfg && product && oldCfg.product !== product;
+
   plcConfigs = plcConfigs.map(p => p.id === id ? { ...p, ip: ip||p.ip, port: port||p.port, product: product||p.product, name: name||p.name } : p);
+
+  if (isProductChanged) {
+     const cfg = plcConfigs.find(p => p.id === id);
+     const sPlc = simPlcs.find(s => s.id === id);
+     if (sPlc) {
+        sPlc.product = product;
+        sPlc.cycleProgress = 0;
+        pool.query('SELECT actual_quantity, target_quantity FROM products WHERE product_code = $1', [product])
+        .then(r => {
+            if (r.rows.length > 0) {
+                sPlc.actual = r.rows[0].actual_quantity;
+                sPlc.target = r.rows[0].target_quantity;
+            }
+        }).catch(()=>{});
+     }
+     pool.query(
+        'INSERT INTO system_logs (tank_name, product_code, event_type, message) VALUES ($1, $2, $3, $4)',
+        [cfg.tank, product, 'CHANGE_PRODUCT', `Bể ${cfg.tank} đổi sang sản xuất mã: ${product}`]
+     ).catch(()=>{});
+  }
+
   res.json({ success: true, data: plcConfigs.find(p => p.id === id) });
 });
 
@@ -155,8 +246,28 @@ app.post('/api/plc/configs/:id/toggle', (req, res) => {
 });
 
 // ==========================================
-// ROUTES: BỂ MẠ (TANKS) & LỊCH SỬ (LOGS)
+// ROUTES: BỂ MẠ (TANKS), SẢN PHẨM & LỊCH SỬ (LOGS)
 // ==========================================
+
+// Lấy danh sách Sản Phẩm
+app.get('/api/products', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM products ORDER BY id ASC');
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Lấy danh sách Logs thay đổi
+app.get('/api/logs', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM system_logs ORDER BY created_at DESC LIMIT 50');
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // 1. Xem danh sách Bể Mạ cùng trạng thái
 app.get('/api/tanks', async (req, res) => {
@@ -249,27 +360,7 @@ app.listen(PORT, () => {
   if (process.env.ENABLE_PLC_SIM === 'true' || process.env.NODE_ENV === 'production') {
     console.log('\n🛠️  KHỞI ĐỘNG GIẢ LẬP PLC NỘI TUYẾN (INLINE)...');
 
-    const tankSettings = {
-      1: { revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, temp: 52 },
-      2: { revA: 120, revV: 10, revT: 110, fwd1A: 200, fwd1V: 10, fwd1T: 45, fwd2A: 200, fwd2V: 12, fwd2T: 120, temp: 55 },
-      3: { revA: 150, revV: 12, revT: 450, fwd1A: 220, fwd1V: 12, fwd1T: 60, fwd2A: 280, fwd2V: 12, fwd2T: 90,  temp: 48 },
-      4: { revA: 180, revV: 14, revT: 200, fwd1A: 250, fwd1V: 13, fwd1T: 60, fwd2A: 300, fwd2V: 13, fwd2T: 150, temp: 50 },
-      5: { revA: 130, revV: 11, revT: 130, fwd1A: 210, fwd1V: 11, fwd1T: 50, fwd2A: 260, fwd2V: 11, fwd2T: 110, temp: 53 },
-      6: { revA: 100, revV: 9,  revT: 100, fwd1A: 180, fwd1V: 9,  fwd1T: 40, fwd2A: 220, fwd2V: 10, fwd2T: 100, temp: 46 },
-    };
 
-    const simPlcs = [
-      { id: 1, tank: 'Bể 1', product: 'SP-01', target: 2500, actual: 2300 },
-      { id: 2, tank: 'Bể 2', product: 'SP-02', target: 1500, actual: 1000 },
-      { id: 3, tank: 'Bể 3', product: 'SP-10', target: 1800, actual: 1100 },
-      { id: 4, tank: 'Bể 4', product: 'SP-04', target: 2200, actual: 700  },
-      { id: 5, tank: 'Bể 5', product: 'SS-07', target: 2300, actual: 1800 },
-      { id: 6, tank: 'Bể 6', product: 'SP-05', target: 1200, actual: 800  },
-    ];
-
-    function fluctuate(base, delta) {
-      return parseFloat((base + (Math.random() * delta * 2 - delta)).toFixed(2));
-    }
 
     simPlcs.forEach(plc => {
       console.log(`  ✅ PLC-0${plc.id} | ${plc.tank} | ${plc.product}`);
@@ -279,13 +370,22 @@ app.listen(PORT, () => {
     // Mỗi giây, inject trực tiếp data vào in-memory state (không qua HTTP)
     setInterval(() => {
       simPlcs.forEach(plc => {
-        if (plc.actual < plc.target) {
-          plc.actual += Math.floor(Math.random() * 3) + 1;
-        }
-        const s = tankSettings[plc.id];
         const cfg = plcConfigs.find(p => p.id === plc.id);
         if (!cfg || cfg.status !== 'connected') return;
 
+        if (plc.cycleProgress === undefined) plc.cycleProgress = 0;
+        plc.cycleProgress += Math.floor(Math.random() * 6) + 5; // 5-10% per second
+
+        let justFinished = false;
+        if (plc.cycleProgress >= 100) {
+            plc.cycleProgress = 0;
+            plc.actual += 1;
+            justFinished = true;
+            pool.query('UPDATE products SET actual_quantity = actual_quantity + 1 WHERE product_code = $1', [plc.product]).catch(()=>{});
+            pool.query('INSERT INTO system_logs (tank_name, product_code, event_type, message) VALUES ($1, $2, $3, $4)', [plc.tank, plc.product, 'CYCLE_COMPLETED', `Bể ${plc.tank} hoàn thành tiến độ mẻ mạ 100%. Sản lượng mã ${plc.product} tăng thêm 1.`]).catch(()=>{});
+        }
+
+        const s = tankSettings[plc.id];
         tankState[plc.id] = {
           id: plc.id, name: plc.tank, status: 'ON', product: plc.product,
           actual: {
@@ -298,7 +398,7 @@ app.listen(PORT, () => {
         };
         dashboardState[plc.id] = {
           id: plc.id, product: plc.product, tank: plc.tank,
-          target: plc.target, actual: plc.actual,
+          target: plc.target, actual: plc.actual, cycleProgress: Math.min(100, plc.cycleProgress),
           progress: Math.min(100, Math.floor((plc.actual / plc.target) * 100)),
           status: 'ĐANG HOẠT ĐỘNG', timeIn: '17:05', timeEst: '',
         };
