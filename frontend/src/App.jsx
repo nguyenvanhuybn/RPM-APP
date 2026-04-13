@@ -269,8 +269,8 @@ function App() {
 
         <div className="content-scrollable">
            {activeTab === 'overview' && renderOverview()}
-           {activeTab === 'tanks' && <div className="tab-content"><h2>Vui lòng xem mã gốc của Bể Mạ (được bảo lưu)</h2></div>}
-           {activeTab === 'products' && <div className="tab-content"><h2>Vui lòng xem mã gốc của Mã SP (được bảo lưu)</h2></div>}
+           {activeTab === 'tanks' && renderTanks()}
+           {activeTab === 'products' && renderProducts()}
            {activeTab === 'reports' && renderReports()}
         </div>
       </main>
