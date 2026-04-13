@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './index.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function App() {
   const [activeTab, setActiveTab] = useState('reports'); // Highlight default to see changes immediately
 
@@ -75,7 +77,7 @@ function App() {
 
   // --- LẮNG NGHE DỮ LIỆU TỪ PLC THEO THỜI GIAN THỰC ---
   React.useEffect(() => {
-    const sse = new EventSource('http://localhost:5000/api/stream');
+    const sse = new EventSource(`${API_URL}/api/stream`);
     
     sse.onmessage = (event) => {
        try {
