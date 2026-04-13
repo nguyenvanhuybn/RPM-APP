@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: rpm-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rpm-db
+          property: connectionString
+  - type: psql
+    name: rpm-db
+    plan: free
