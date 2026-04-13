@@ -152,6 +152,8 @@ body { background-color: var(--bg-primary); color: var(--text-primary); overflow
 
 .modal-header { background-color: white; border-bottom: 1px solid var(--gray-light); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; }
 .modal-header h3 { font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; text-transform: uppercase; }
+.modal-body { padding: 24px 32px; }
+.form-row { display: flex; flex-direction: column; gap: 20px; }
 .close-btn { background: #f1f5f9; border: none; color: var(--text-secondary); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; transition: 0.2s;}
 .close-btn:hover { background: #e2e8f0; color: var(--text-primary); }
 

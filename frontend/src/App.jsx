@@ -427,7 +427,7 @@ function App() {
               <h3>{editingProduct.id ? 'CHỈNH SỬA SẢN PHẨM' : 'THÊM MỚI SẢN PHẨM'}</h3>
               <button className="close-btn" onClick={() => setModalType('NONE')}>×</button>
             </div>
-            <div className="modal-body" style={{padding: '24px 32px'}}>
+            <div className="modal-body">
               <div className="form-row-3" style={{marginBottom: '24px'}}>
                 <div className="form-group">
                   <label>MÃ SP</label>
