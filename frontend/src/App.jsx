@@ -1,121 +1,132 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import './index.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [tanks, setTanks] = useState([
+    { id: 1, name: 'Bể Mạ Niken 01', status: 'ON', current_product: 'Ốc M8', temp: '50°C', ph: '4.5' },
+    { id: 2, name: 'Bể Mạ Đồng 02', status: 'OFF', current_product: 'N/A', temp: '25°C', ph: '7.0' },
+    { id: 3, name: 'Bể Mạ Kẽm 03', status: 'ERROR', current_product: 'Trục Động Cơ', temp: '80°C', ph: '2.1' },
+    { id: 4, name: 'Bể Rửa Nước 04', status: 'ON', current_product: 'Ốc M8', temp: '30°C', ph: '6.8' }
+  ]);
+
+  const [production, setProduction] = useState({
+    plan: 5000,
+    actual: 3250,
+    product: 'Ốc M8'
+  });
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="dashboard-container">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="logo">
+          <h2>PES <span>Pro</span></h2>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <nav className="nav-menu">
+          <a href="#" className="nav-item active">
+            <span className="icon">📊</span> Tổng quan
+          </a>
+          <a href="#" className="nav-item">
+            <span className="icon">🏭</span> Giám sát Bể
+          </a>
+          <a href="#" className="nav-item">
+            <span className="icon">📋</span> Kế hoạch (YDKV)
+          </a>
+          <a href="#" className="nav-item">
+            <span className="icon">⚙️</span> Lịch sử Sự cố
+          </a>
+        </nav>
+      </aside>
 
-      <div className="ticks"></div>
+      {/* Main Content */}
+      <main className="main-content">
+        <header className="top-header">
+          <div>
+            <h1>Dashboard Giám Sát Thời Gian Thực</h1>
+            <p className="subtitle">Hệ thống Điều hành Mạ công nghiệp (RPM)</p>
+          </div>
+          <div className="user-profile">
+            <div className="avatar">AD</div>
+            <span>Admin</span>
+          </div>
+        </header>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* Top Widgets */}
+        <section className="widgets-grid">
+          <div className="widget-card stats-card">
+            <h3>Tiến độ Sản xuất Hiện tại</h3>
+            <div className="progress-details">
+              <div>
+                <p className="label">Mã hàng chạy chính</p>
+                <p className="value highlight">{production.product}</p>
+              </div>
+              <div className="divider"></div>
+              <div>
+                <p className="label">Kế hoạch</p>
+                <p className="value">{production.plan}</p>
+              </div>
+              <div className="divider"></div>
+              <div>
+                <p className="label">Đã sản xuất (Thực tế)</p>
+                <p className="value highlight-green">{production.actual}</p>
+              </div>
+            </div>
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar-fill" 
+                style={{ width: `${(production.actual / production.plan) * 100}%` }}
+              ></div>
+            </div>
+            <p className="progress-text">{((production.actual / production.plan) * 100).toFixed(1)}% Hoàn thành</p>
+          </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <div className="widget-card OEE-card">
+            <h3>Hiệu suất Tổng thể (OEE)</h3>
+            <div className="oee-circle">
+              <div className="inner-circle">
+                <span className="oee-val">87%</span>
+              </div>
+            </div>
+            <div className="oee-labels">
+               <span><strong>A:</strong> 95%</span>
+               <span><strong>P:</strong> 92%</span>
+               <span><strong>Q:</strong> 99%</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Tanks Grid */}
+        <h2 className="section-title">Trạng Thái Bể Mạ & Thiết Bị</h2>
+        <section className="tanks-grid">
+          {tanks.map(tank => (
+            <div key={tank.id} className={`tank-card status-${tank.status}`}>
+              <div className="tank-header">
+                <h3>{tank.name}</h3>
+                <span className={`status-badge ${tank.status}`}>{tank.status}</span>
+              </div>
+              <div className="tank-body">
+                <div className="data-row">
+                  <span className="data-lbl">Mã hàng:</span>
+                  <span className="data-val">{tank.current_product}</span>
+                </div>
+                <div className="data-row">
+                  <span className="data-lbl">Nhiệt độ:</span>
+                  <span className="data-val temp">{tank.temp}</span>
+                </div>
+                <div className="data-row">
+                  <span className="data-lbl">Nồng độ pH:</span>
+                  <span className="data-val ph">{tank.ph}</span>
+                </div>
+              </div>
+              <div className="tank-footer">
+                <button className="btn-details">Xem chi tiết mẻ</button>
+              </div>
+            </div>
+          ))}
+        </section>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
