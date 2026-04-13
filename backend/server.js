@@ -19,6 +19,38 @@ pool.connect()
   .then(() => console.log("Connected to PostgreSQL successfully!"))
   .catch(err => console.error("PostgreSQL connection error:", err));
 
+let sseClients = [];
+
+// ==========================================
+// ROUTES: WEBSOCKET/SSE CHO GIẢ LẬP PLC (REALTIME)
+// ==========================================
+
+// API nhận dữ liệu từ PLC Simulator
+app.post('/api/plc-data', (req, res) => {
+    const { tanks, dashboard } = req.body;
+    // Broadcast data cho tất cả màn hình Web đang mở
+    const payload = JSON.stringify({ tanks, dashboard });
+    sseClients.forEach(client => {
+        client.res.write(`data: ${payload}\n\n`);
+    });
+    res.json({ success: true });
+});
+
+// Clients (Web) kết nối vào đây để nghe dữ liệu thời gian thực
+app.get('/api/stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders(); 
+
+    const clientId = Date.now();
+    sseClients.push({ id: clientId, res });
+
+    req.on('close', () => {
+        sseClients = sseClients.filter(c => c.id !== clientId);
+    });
+});
+
 // ==========================================
 // ROUTES: BỂ MẠ (TANKS) & LỊCH SỬ (LOGS)
 // ==========================================

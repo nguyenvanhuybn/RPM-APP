@@ -5,7 +5,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('reports'); // Highlight default to see changes immediately
 
   // --- DASHBOARD DATA ---
-  const [dashboardCards] = useState([
+  const [dashboardCards, setDashboardCards] = useState([
     { id: 1, product: 'SP-01', progress: 92, status: 'ĐANG HOẠT ĐỘNG', tank: 'Bể 1', actual: 2300, target: 2500, timeIn: '17:05', timeEst: '20h05 - 20h25' },
     { id: 2, product: 'SP-02', progress: 67, status: 'ĐANG HOẠT ĐỘNG', tank: 'Bể 2', actual: 1000, target: 1500, timeIn: '17:05', timeEst: '21h17 - 21h37' },
     { id: 3, product: 'SP-10', progress: 61, status: 'ĐANG HOẠT ĐỘNG', tank: 'Bể 3', actual: 1100, target: 1800, timeIn: '17:05', timeEst: '21h41 - 22h01' },
@@ -60,6 +60,27 @@ function App() {
     if (pct >= 35) return 'info';
     return 'warning';
   };
+
+  // --- LẮNG NGHE DỮ LIỆU TỪ PLC THEO THỜI GIAN THỰC ---
+  React.useEffect(() => {
+    const sse = new EventSource('http://localhost:5000/api/stream');
+    
+    sse.onmessage = (event) => {
+       try {
+          const { tanks, dashboard } = JSON.parse(event.data);
+          if(tanks) setTanks(tanks);
+          if(dashboard) setDashboardCards(dashboard);
+       } catch (err) {
+          console.error("Lỗi đọc dữ liệu PLC:", err);
+       }
+    };
+
+    sse.onerror = (err) => {
+       // Kệ lỗi kết nối vì backend có thể chưa bật
+    };
+
+    return () => sse.close();
+  }, []);
 
   const renderOverview = () => (
     <div className="tab-content" style={{position: 'relative'}}>
