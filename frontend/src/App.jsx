@@ -227,6 +227,116 @@ function App() {
     </div>
   );
 
+  const renderProducts = () => (
+    <div className="tab-content full-width">
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+         <div className="search-bar">
+             <span style={{color: '#9ca3af', marginRight: '8px'}}>🔍</span>
+             <input type="text" placeholder="Tìm kiếm theo mã sp" className="search-input" />
+         </div>
+         <button className="btn-primary premium-hover" onClick={() => {
+           setEditingProduct({ id: null, code: '', volume: '', temp: '', revA: '', revV: '', revT: '', fwd1A: '', fwd1V: '', fwd1T: '', fwd2A: '', fwd2V: '', fwd2T: '' });
+           setModalType('PRODUCT');
+         }}>+ THÊM MỚI</button>
+      </div>
+
+      <div className="complex-table-wrapper premium-shadow">
+        <table className="complex-table" style={{minWidth: '1200px'}}>
+          <thead>
+            <tr>
+              <th rowSpan="2" style={{width: '90px'}}>MÃ SP</th>
+              <th rowSpan="2" style={{width: '90px'}}>SẢN LƯỢNG</th>
+              <th colSpan="3">MẠ NGƯỢC</th>
+              <th colSpan="3">MẠ THUẬN 1</th>
+              <th colSpan="3">MẠ THUẬN 2</th>
+              <th rowSpan="2" style={{width: '90px'}}>NHIỆT ĐỘ(°C)</th>
+              <th rowSpan="2" style={{width: '140px'}}>THỜI GIAN CẬP NHẬT</th>
+              <th rowSpan="2" style={{width: '100px'}}>CHỈNH SỬA</th>
+            </tr>
+            <tr>
+              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
+              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
+              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map(p => (
+              <tr key={p.id} className="actual-row premium-tr">
+                <td className="tank-name" style={{color: 'var(--accent-color)'}}>{p.code}</td>
+                <td style={{fontWeight: 600}}>{p.volume}</td>
+                <td>{p.revA}</td><td>{p.revV}</td><td>{p.revT}</td>
+                <td>{p.fwd1A}</td><td>{p.fwd1V}</td><td>{p.fwd1T}</td>
+                <td>{p.fwd2A}</td><td>{p.fwd2V}</td><td>{p.fwd2T}</td>
+                <td style={{fontWeight: 600, color: '#f59e0b'}}>{p.temp}</td>
+                <td style={{fontSize: '12px', color: 'var(--text-secondary)'}}>{p.updated}</td>
+                <td>
+                  <button className="icon-btn-edit" onClick={() => {
+                    setEditingProduct({...p}); setModalType('PRODUCT');
+                  }}>📝</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderTanks = () => (
+    <div className="tab-content full-width">
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+         <div className="search-bar">
+             <span style={{color: '#9ca3af', marginRight: '8px'}}>🔍</span>
+             <input type="text" placeholder="Tìm kiếm theo mã sp" className="search-input" />
+         </div>
+      </div>
+      <div className="complex-table-wrapper premium-shadow">
+        <table className="complex-table">
+          <thead>
+            <tr>
+              <th rowSpan="2">BỂ MẠ</th>
+              <th rowSpan="2">CHỈNH LƯU</th>
+              <th rowSpan="2">MÃ SP</th>
+              <th rowSpan="2" style={{width: '60px'}}></th> 
+              <th colSpan="3">MẠ NGƯỢC</th>
+              <th colSpan="3">MẠ THUẬN 1</th>
+              <th colSpan="3">MẠ THUẬN 2</th>
+              <th rowSpan="2">NHIỆT ĐỘ(°C)</th>
+            </tr>
+            <tr>
+              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
+              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
+              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tanks.map(tank => (
+              <React.Fragment key={tank.id}>
+                <tr className="actual-row premium-tr">
+                  <td rowSpan="2" className="tank-name">{tank.name}</td>
+                  <td rowSpan="2" className="tank-status"><span className={tank.status === 'ON' ? 'text-success' : 'text-muted'}>{tank.status}</span></td>
+                  <td rowSpan="2" className="tank-product">{tank.product}</td>
+                  <td className="row-label">Thực tế</td>
+                  <td>{tank.actual.revA}</td><td>{tank.actual.revV}</td><td>{tank.actual.revT}</td>
+                  <td>{tank.actual.fwd1A}</td><td>{tank.actual.fwd1V}</td><td>{tank.actual.fwd1T}</td>
+                  <td>{tank.actual.fwd2A}</td><td>{tank.actual.fwd2V}</td><td>{tank.actual.fwd2T}</td>
+                  <td style={{fontWeight: 700}}>{tank.actual.temp}</td>
+                </tr>
+                <tr className="setting-row">
+                  <td className="row-label">Cài đặt</td>
+                  <td>{tank.setting.revA}</td><td>{tank.setting.revV}</td><td>{tank.setting.revT}</td>
+                  <td>{tank.setting.fwd1A}</td><td>{tank.setting.fwd1V}</td><td>{tank.setting.fwd1T}</td>
+                  <td>{tank.setting.fwd2A}</td><td>{tank.setting.fwd2V}</td><td>{tank.setting.fwd2T}</td>
+                  <td>{tank.setting.temp}</td>
+                </tr>
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="dashboard-container">
       {/* SIDEBAR */}
