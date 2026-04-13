@@ -49,9 +49,17 @@ const initDB = async () => {
         product_name VARCHAR(100) NOT NULL,
         actual_quantity INT DEFAULT 0,
         target_quantity INT DEFAULT 0,
+        standard_conditions JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // Add column if table already existed without it
+    await client.query(`
+      ALTER TABLE products 
+      ADD COLUMN IF NOT EXISTS standard_conditions JSONB
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS system_logs (
         id SERIAL PRIMARY KEY,
