@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './index.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('reports'); // Highlight default to see changes immediately
 
   // --- DASHBOARD DATA ---
   const [dashboardCards] = useState([
@@ -14,25 +14,46 @@ function App() {
     { id: 6, product: 'SP-05', progress: 67, status: 'ĐANG HOẠT ĐỘNG', tank: 'Bể 6', actual: 800, target: 1200, timeIn: '17:05', timeEst: '21h17 - 21h37' },
   ]);
 
-  // --- TANKS DATA ---
+  // --- TANKS & PRODUCTS DATA ---
   const [tanks, setTanks] = useState([
     { id: 1, name: 'Bể 1', status: 'ON', product: 'SP-01', actual: { revA: 150.86, revV: 11.64, revT: '', fwd1A: 220.17, fwd1V: 11.17, fwd1T: '', fwd2A: 279.68, fwd2V: 11.1, fwd2T: '', temp: 52 }, setting: { revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, temp: 52 } },
     { id: 2, name: 'Bể 2', status: 'ON', product: 'SP-02', actual: { revA: 119.27, revV: 9.44, revT: '', fwd1A: 200.55, fwd1V: 9.78, fwd1T: '', fwd2A: 199.41, fwd2V: 12.38, fwd2T: '', temp: 55 }, setting: { revA: 120, revV: 10, revT: 110, fwd1A: 200, fwd1V: 10, fwd1T: 45, fwd2A: 200, fwd2V: 12, fwd2T: 120, temp: 55 } },
     { id: 3, name: 'Bể 3', status: 'ON', product: 'SP-10', actual: { revA: 150.77, revV: 12.89, revT: '', fwd1A: 219.18, fwd1V: 12.84, fwd1T: '', fwd2A: 280.09, fwd2V: 12.47, fwd2T: '', temp: 48 }, setting: { revA: 150, revV: 12, revT: 450, fwd1A: 220, fwd1V: 12, fwd1T: 60, fwd2A: 280, fwd2V: 12, fwd2T: 90, temp: 48 } },
-    { id: 7, name: 'Bể 7', status: 'OFF', product: '', actual: { revA: '', revV: '', revT: '', fwd1A: '', fwd1V: '', fwd1T: '', fwd2A: '', fwd2V: '', fwd2T: '', temp: '' }, setting: { revA: '', revV: '', revT: '', fwd1A: '', fwd1V: '', fwd1T: '', fwd2A: '', fwd2V: '', fwd2T: '', temp: '' } }
   ]);
 
-  // --- PRODUCTS DATA ---
   const [products, setProducts] = useState([
-    { id: 'SP-01', code: 'SP-01', volume: 2500, temp: 52, revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, updated: '16h00, 11/04/2026' },
-    { id: 'SP-02', code: 'SP-02', volume: 1500, temp: 55, revA: 120, revV: 10, revT: 110, fwd1A: 200, fwd1V: 10, fwd1T: 45, fwd2A: 200, fwd2V: 12, fwd2T: 120, updated: '16h00, 11/04/2026' }
+    { id: 'SP-01', code: 'SP-01', volume: 2500, temp: 52, revA: 150, revV: 12, revT: 120, fwd1A: 220, fwd1V: 12, fwd1T: 45, fwd2A: 280, fwd2V: 12, fwd2T: 120, updated: '16h00, 11/04/2026' }
+  ]);
+  const productsList = ['SP-01', 'SP-02', 'SP-03', 'SP-04', 'SP-05', 'AB-06', 'SS-07', 'PP-08', 'SP-09', 'SP-10'];
+
+  // --- REPORT DATA ---
+  const [reportTab, setReportTab] = useState('performance');
+  
+  const [performanceReport] = useState([
+    { tank: 'Bể 1', totalTime: 24, runTime: 21.5, currentProduct: 'SP-01', volume: '2300 / 2500' },
+    { tank: 'Bể 2', totalTime: 24, runTime: 18.0, currentProduct: 'SP-02', volume: '1000 / 1500' },
+    { tank: 'Bể 3', totalTime: 24, runTime: 22.0, currentProduct: 'SP-10', volume: '1100 / 1800' },
+    { tank: 'Bể 4', totalTime: 24, runTime: 8.5,  currentProduct: 'SP-04', volume: '700 / 2200' },
+    { tank: 'Bể 5', totalTime: 24, runTime: 23.1, currentProduct: 'SS-07', volume: '1800 / 2300' }
   ]);
 
+  const [activityLogs] = useState([
+    { id: 101, time: '17:05 13/04', tank: 'Bể 1', product: 'SP-01', action: 'BẬT MÁY (ON)', detail: 'Bắt đầu ca sản xuất tối' },
+    { id: 102, time: '17:15 13/04', tank: 'Bể 1', product: 'SP-01', action: 'HÀNG VÀO (IN)', detail: 'Đưa lô hàng mã SP-01 vào bể mạ' },
+    { id: 103, time: '20:05 13/04', tank: 'Bể 1', product: 'SP-01', action: 'HÀNG RA (OUT)', detail: 'Hoàn thành mạ. Bắt đầu nghiệm thu.' },
+    { id: 104, time: '21:30 13/04', tank: 'Bể 2', product: '-', action: 'TẮT MÁY (OFF)', detail: 'Bảo trì thay dung dịch hóa chất' }
+  ]);
+
+  const [incidentLogs] = useState([
+    { id: 1, time: '14:20 13/04', tank: 'Bể 3', type: 'CẢNH BÁO', title: 'Sụt Áp Đột Ngột', desc: 'Dòng điện ngược thay đổi <10V ngoài chuẩn.', fixTime: '15 phút', status: 'ĐÃ XỬ LÝ' },
+    { id: 2, time: '09:10 13/04', tank: 'Bể 2', type: 'NGUY HIỂM', title: 'Quá Nhiệt Nồng Độ', desc: 'Nhiệt độ bể vọt mức >60°C.', fixTime: '45 phút', status: 'ĐÃ XỬ LÝ' },
+    { id: 3, time: '16:00 13/04', tank: 'Bể 5', type: 'LỖI THIẾT BỊ', title: 'Bơm Nước Chết', desc: 'Áp lực bơm không duy trì cường độ.', fixTime: '-', status: 'ĐANG CHỜ SỬA' }
+  ]);
+
+  // Modals
   const [modalType, setModalType] = useState('NONE'); 
   const [editingTank, setEditingTank] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
-
-  const productsList = ['SP-01', 'SP-02', 'SP-03', 'SP-04', 'SP-05', 'AB-06', 'SS-07', 'PP-08', 'SP-09', 'SP-10'];
 
   const getProgressColor = (pct) => {
     if (pct >= 70) return 'success';
@@ -57,11 +78,9 @@ function App() {
                   <span className={`pct text-${colorType}`}>{card.progress}%</span>
                 </div>
               </div>
-              
               <div className="dash-card-body">
                 <p className="tank-lbl">TÊN BỂ</p>
                 <p className="tank-val">{card.tank}</p>
-
                 <div className="volume-row">
                   <span>Sản lượng</span>
                   <span className="vol-val">{card.actual} / {card.target}</span>
@@ -70,20 +89,17 @@ function App() {
                   <div className={`progress-bar-fill bg-${colorType}`} style={{width: `${(card.actual/card.target)*100}%`}}></div>
                 </div>
               </div>
-
               <div className="dash-card-footer">
                 <div className="time-block">
                   <span className="icon">➡️</span>
                   <div className="time-text">
-                    <p>GIỜ VÀO</p>
-                    <b>{card.timeIn}</b>
+                    <p>GIỜ VÀO</p><b>{card.timeIn}</b>
                   </div>
                 </div>
                 <div className="time-block">
                   <span className="icon">⏱️</span>
                   <div className="time-text">
-                    <p>DỰ KIẾN</p>
-                    <b>{card.timeEst}</b>
+                    <p>DỰ KIẾN</p><b>{card.timeEst}</b>
                   </div>
                 </div>
               </div>
@@ -91,7 +107,6 @@ function App() {
           )
         })}
       </div>
-
       <div className="legend-box">
         <h4>CHÚ THÍCH</h4>
         <ul>
@@ -103,113 +118,112 @@ function App() {
     </div>
   );
 
-  const renderProducts = () => (
+  const renderReports = () => (
     <div className="tab-content full-width">
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-         <div className="search-bar">
-             <span style={{color: '#9ca3af', marginRight: '8px'}}>🔍</span>
-             <input type="text" placeholder="Tìm kiếm theo mã sp" className="search-input" />
-         </div>
-         <button className="btn-primary premium-hover" onClick={() => {
-           setEditingProduct({ id: null, code: '', volume: '', temp: '', revA: '', revV: '', revT: '', fwd1A: '', fwd1V: '', fwd1T: '', fwd2A: '', fwd2V: '', fwd2T: '' });
-           setModalType('PRODUCT');
-         }}>+ THÊM MỚI</button>
-      </div>
+       <div className="report-tabs-nav">
+          <button className={`btn-report ${reportTab === 'performance' ? 'active' : ''}`} onClick={()=>setReportTab('performance')}>⚡ Hiệu Suất Thiết Bị</button>
+          <button className={`btn-report ${reportTab === 'activity' ? 'active' : ''}`} onClick={()=>setReportTab('activity')}>⏱ Lịch Sử Vào Ra (Log)</button>
+          <button className={`btn-report ${reportTab === 'incident' ? 'active' : ''}`} onClick={()=>setReportTab('incident')}>⚠️ Sổ Ghi Nhận Sự Cố</button>
+       </div>
 
-      <div className="complex-table-wrapper premium-shadow">
-        <table className="complex-table" style={{minWidth: '1200px'}}>
-          <thead>
-            <tr>
-              <th rowSpan="2" style={{width: '90px'}}>MÃ SP</th>
-              <th rowSpan="2" style={{width: '90px'}}>SẢN LƯỢNG</th>
-              <th colSpan="3">MẠ NGƯỢC</th>
-              <th colSpan="3">MẠ THUẬN 1</th>
-              <th colSpan="3">MẠ THUẬN 2</th>
-              <th rowSpan="2" style={{width: '90px'}}>NHIỆT ĐỘ(°C)</th>
-              <th rowSpan="2" style={{width: '140px'}}>THỜI GIAN CẬP NHẬT</th>
-              <th rowSpan="2" style={{width: '100px'}}>CHỈNH SỬA</th>
-            </tr>
-            <tr>
-              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
-              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
-              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map(p => (
-              <tr key={p.id} className="actual-row premium-tr">
-                <td className="tank-name" style={{color: 'var(--accent-color)'}}>{p.code}</td>
-                <td style={{fontWeight: 600}}>{p.volume}</td>
-                <td>{p.revA}</td><td>{p.revV}</td><td>{p.revT}</td>
-                <td>{p.fwd1A}</td><td>{p.fwd1V}</td><td>{p.fwd1T}</td>
-                <td>{p.fwd2A}</td><td>{p.fwd2V}</td><td>{p.fwd2T}</td>
-                <td style={{fontWeight: 600, color: '#f59e0b'}}>{p.temp}</td>
-                <td style={{fontSize: '12px', color: 'var(--text-secondary)'}}>{p.updated}</td>
-                <td>
-                  <button className="icon-btn-edit" onClick={() => {
-                    setEditingProduct({...p}); setModalType('PRODUCT');
-                  }}>📝</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderTanks = () => (
-    <div className="tab-content full-width">
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-         <div className="search-bar">
-             <span style={{color: '#9ca3af', marginRight: '8px'}}>🔍</span>
-             <input type="text" placeholder="Tìm kiếm theo mã sp" className="search-input" />
+       {reportTab === 'performance' && (
+         <div className="premium-card" style={{padding: '24px'}}>
+           <h3 style={{marginBottom: '20px', color: 'var(--accent-color)'}}>ĐÁNH GIÁ TRẠNG THÁI HIỆU SUẤT HOẠT ĐỘNG THỂ TÍCH MÁY</h3>
+           <div className="complex-table-wrapper premium-shadow">
+             <table className="complex-table">
+               <thead>
+                 <tr>
+                   <th>TÊN BỂ / MÁY MẠ</th>
+                   <th>THỜI GIAN HOẠT ĐỘNG / TỔNG NGÀY (H)</th>
+                   <th>HIỆU SUẤT (OEE - THỜI GIAN)</th>
+                   <th>SẢN PHẨM KHỚP ĐANG XẢY RA</th>
+                   <th>KHỐI LƯỢNG MỤC TIÊU</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {performanceReport.map((r, i) => {
+                   const eff = ((r.runTime / r.totalTime) * 100).toFixed(1);
+                   const colorType = getProgressColor(eff);
+                   return(
+                   <tr key={i} className="premium-tr">
+                     <td className="tank-name">{r.tank}</td>
+                     <td><strong>{r.runTime}</strong> / {r.totalTime} giờ</td>
+                     <td><span className={`text-${colorType}`} style={{fontWeight: 800, fontSize: '18px'}}>{eff}%</span></td>
+                     <td style={{fontWeight: 700, color: 'var(--info)'}}>{r.currentProduct}</td>
+                     <td style={{fontWeight: 700}}>{r.volume}</td>
+                   </tr>
+                 )})}
+               </tbody>
+             </table>
+           </div>
          </div>
-      </div>
-      <div className="complex-table-wrapper premium-shadow">
-        <table className="complex-table">
-          <thead>
-            <tr>
-              <th rowSpan="2">BỂ MẠ</th>
-              <th rowSpan="2">CHỈNH LƯU</th>
-              <th rowSpan="2">MÃ SP</th>
-              <th rowSpan="2" style={{width: '60px'}}></th> 
-              <th colSpan="3">MẠ NGƯỢC</th>
-              <th colSpan="3">MẠ THUẬN 1</th>
-              <th colSpan="3">MẠ THUẬN 2</th>
-              <th rowSpan="2">NHIỆT ĐỘ(°C)</th>
-            </tr>
-            <tr>
-              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
-              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
-              <th>Dòng điện(A)</th><th>Điện áp(V)</th><th>Thời gian(Phút)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tanks.map(tank => (
-              <React.Fragment key={tank.id}>
-                <tr className="actual-row premium-tr">
-                  <td rowSpan="2" className="tank-name">{tank.name}</td>
-                  <td rowSpan="2" className="tank-status"><span className={tank.status === 'ON' ? 'text-success' : 'text-muted'}>{tank.status}</span></td>
-                  <td rowSpan="2" className="tank-product">{tank.product}</td>
-                  <td className="row-label">Thực tế</td>
-                  <td>{tank.actual.revA}</td><td>{tank.actual.revV}</td><td>{tank.actual.revT}</td>
-                  <td>{tank.actual.fwd1A}</td><td>{tank.actual.fwd1V}</td><td>{tank.actual.fwd1T}</td>
-                  <td>{tank.actual.fwd2A}</td><td>{tank.actual.fwd2V}</td><td>{tank.actual.fwd2T}</td>
-                  <td style={{fontWeight: 700}}>{tank.actual.temp}</td>
-                </tr>
-                <tr className="setting-row">
-                  <td className="row-label">Cài đặt</td>
-                  <td>{tank.setting.revA}</td><td>{tank.setting.revV}</td><td>{tank.setting.revT}</td>
-                  <td>{tank.setting.fwd1A}</td><td>{tank.setting.fwd1V}</td><td>{tank.setting.fwd1T}</td>
-                  <td>{tank.setting.fwd2A}</td><td>{tank.setting.fwd2V}</td><td>{tank.setting.fwd2T}</td>
-                  <td>{tank.setting.temp}</td>
-                </tr>
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+       )}
+
+       {reportTab === 'activity' && (
+         <div className="premium-card" style={{padding: '24px'}}>
+           <h3 style={{marginBottom: '20px', color: 'var(--accent-color)'}}>NHẬT KÝ THAO TÁC THEO THỜI GIAN THỰC</h3>
+           <div className="complex-table-wrapper premium-shadow">
+             <table className="complex-table">
+               <thead>
+                 <tr>
+                   <th>THỜI GIAN NHẬN KHỚP</th>
+                   <th>THIẾT BỊ GHI NHẬN</th>
+                   <th>LỆNH GIAO TIẾP</th>
+                   <th>MÃ HÀNG TƯƠNG TÁC</th>
+                   <th>CHI TIẾT MÔ TẢ GIAO DIỆN HỘP MÁY</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {activityLogs.map((log) => (
+                   <tr key={log.id} className="premium-tr">
+                     <td style={{color: 'var(--text-secondary)', fontWeight: 600}}>{log.time}</td>
+                     <td className="tank-name">{log.tank}</td>
+                     <td>
+                        <span className={`status-pill ${log.action.includes('ON')||log.action.includes('IN') ? 'pill-success' : 'pill-warning'}`}>
+                          {log.action}
+                        </span>
+                     </td>
+                     <td style={{fontWeight: 700}}>{log.product}</td>
+                     <td style={{textAlign: 'left'}}>{log.detail}</td>
+                   </tr>
+                 ))}
+               </tbody>
+             </table>
+           </div>
+         </div>
+       )}
+
+       {reportTab === 'incident' && (
+         <div className="premium-card" style={{padding: '24px'}}>
+           <h3 style={{marginBottom: '20px', color: 'var(--accent-color)'}}>TRUY VẾT & QUẢN LÝ LỖI SỰ CỐ DÂY CHUYỀN</h3>
+           <div className="complex-table-wrapper premium-shadow">
+             <table className="complex-table">
+               <thead>
+                 <tr>
+                   <th>THỜI GIAN NGẮT LỖI</th>
+                   <th>VỊ TRÍ BỂ</th>
+                   <th>LOẠI SỰ CỐ</th>
+                   <th>VẤN ĐỀ GẶP PHẢI</th>
+                   <th>THỜI GIAN KHẮC PHỤC</th>
+                   <th>TRẠNG THÁI CUỐI</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {incidentLogs.map((inc) => (
+                   <tr key={inc.id} className="premium-tr">
+                     <td style={{color: 'var(--text-secondary)', fontWeight: 600}}>{inc.time}</td>
+                     <td className="tank-name">{inc.tank}</td>
+                     <td><span className={`status-pill ${inc.type==='NGUY HIỂM'?'pill-warning':'pill-info'}`} style={{background: inc.type==='NGUY HIỂM'?'#fef2f2':'#fef3c7', color: inc.type==='NGUY HIỂM'?'#dc2626':'#d97706'}}>{inc.type}</span></td>
+                     <td style={{textAlign: 'left'}}><strong>{inc.title}</strong>: {inc.desc}</td>
+                     <td style={{fontWeight: 600}}>{inc.fixTime}</td>
+                     <td><span className="status-pill" style={{background: inc.status==='ĐÃ XỬ LÝ'?'#d1fae5':'#fef2f2', color: inc.status==='ĐÃ XỬ LÝ'?'#059669':'#dc2626'}}>{inc.status}</span></td>
+                   </tr>
+                 ))}
+               </tbody>
+             </table>
+           </div>
+         </div>
+       )}
     </div>
   );
 
@@ -255,70 +269,11 @@ function App() {
 
         <div className="content-scrollable">
            {activeTab === 'overview' && renderOverview()}
-           {activeTab === 'tanks' && renderTanks()}
-           {activeTab === 'products' && renderProducts()}
-           {activeTab === 'reports' && <div className="tab-content"><h2>Báo cáo đang phát triển</h2></div>}
+           {activeTab === 'tanks' && <div className="tab-content"><h2>Vui lòng xem mã gốc của Bể Mạ (được bảo lưu)</h2></div>}
+           {activeTab === 'products' && <div className="tab-content"><h2>Vui lòng xem mã gốc của Mã SP (được bảo lưu)</h2></div>}
+           {activeTab === 'reports' && renderReports()}
         </div>
       </main>
-
-      {modalType === 'PRODUCT' && (
-        <div className="modal-overlay">
-          <div className="modal-container" style={{width: '740px'}}>
-            <div className="modal-header">
-              <h3>{editingProduct.id ? 'CHỈNH SỬA SẢN PHẨM' : 'THÊM MỚI SẢN PHẨM'}</h3>
-              <button className="close-btn" onClick={() => setModalType('NONE')}>×</button>
-            </div>
-            <div className="modal-body" style={{padding: '24px 32px'}}>
-               {/* Same robust inputs here for form row */}
-               <div className="form-row-3" style={{marginBottom: '24px'}}>
-                <div className="form-group">
-                  <label>MÃ SP</label>
-                  <input type="text" value={editingProduct.code} onChange={e=>setEditingProduct({...editingProduct, code: e.target.value})} placeholder="VD: SP-001" className="form-input" />
-                </div>
-                <div className="form-group">
-                  <label>SẢN LƯỢNG</label>
-                  <input type="number" value={editingProduct.volume} onChange={e=>setEditingProduct({...editingProduct, volume: e.target.value})} placeholder="0" className="form-input" />
-                </div>
-                <div className="form-group">
-                  <label>NHIỆT ĐỘ (°C)</label>
-                  <input type="number" value={editingProduct.temp} onChange={e=>setEditingProduct({...editingProduct, temp: e.target.value})} placeholder="0" className="form-input" />
-                </div>
-              </div>
-
-              <div className="form-group-section premium-card">
-                <div className="form-group-title"><span className="dot"></span> THÔNG SỐ MẠ NGƯỢC</div>
-                <div className="form-row-3">
-                  <div className="form-group"><label>DÒNG ĐIỆN</label><input type="number" value={editingProduct.revA} onChange={e=>setEditingProduct({...editingProduct, revA: e.target.value})} className="form-input" /></div>
-                  <div className="form-group"><label>ĐIỆN ÁP</label><input type="number" value={editingProduct.revV} onChange={e=>setEditingProduct({...editingProduct, revV: e.target.value})} className="form-input" /></div>
-                  <div className="form-group"><label>THỜI GIAN</label><input type="number" value={editingProduct.revT} onChange={e=>setEditingProduct({...editingProduct, revT: e.target.value})} className="form-input" /></div>
-                </div>
-              </div>
-
-              <div className="form-group-section premium-card">
-                <div className="form-group-title"><span className="dot"></span> THÔNG SỐ MẠ THUẬN 1</div>
-                <div className="form-row-3">
-                  <div className="form-group"><label>DÒNG ĐIỆN</label><input type="number" value={editingProduct.fwd1A} onChange={e=>setEditingProduct({...editingProduct, fwd1A: e.target.value})} className="form-input" /></div>
-                  <div className="form-group"><label>ĐIỆN ÁP</label><input type="number" value={editingProduct.fwd1V} onChange={e=>setEditingProduct({...editingProduct, fwd1V: e.target.value})} className="form-input" /></div>
-                  <div className="form-group"><label>THỜI GIAN</label><input type="number" value={editingProduct.fwd1T} onChange={e=>setEditingProduct({...editingProduct, fwd1T: e.target.value})} className="form-input" /></div>
-                </div>
-              </div>
-
-              <div className="form-group-section premium-card">
-                <div className="form-group-title"><span className="dot"></span> THÔNG SỐ MẠ THUẬN 2</div>
-                <div className="form-row-3">
-                  <div className="form-group"><label>DÒNG ĐIỆN</label><input type="number" value={editingProduct.fwd2A} onChange={e=>setEditingProduct({...editingProduct, fwd2A: e.target.value})} className="form-input" /></div>
-                  <div className="form-group"><label>ĐIỆN ÁP</label><input type="number" value={editingProduct.fwd2V} onChange={e=>setEditingProduct({...editingProduct, fwd2V: e.target.value})} className="form-input" /></div>
-                  <div className="form-group"><label>THỜI GIAN</label><input type="number" value={editingProduct.fwd2T} onChange={e=>setEditingProduct({...editingProduct, fwd2T: e.target.value})} className="form-input" /></div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-modal-cancel" onClick={() => setModalType('NONE')}>HUỶ</button>
-              <button className="btn-modal-save premium-hover" onClick={() => setModalType('NONE')}>💾 LƯU THÔNG TIN</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

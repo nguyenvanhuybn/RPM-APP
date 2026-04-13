@@ -170,3 +170,37 @@ body { background-color: var(--bg-primary); color: var(--text-primary); overflow
 .btn-modal-cancel:hover { background-color: #f1f5f9; }
 .btn-modal-save { background-color: var(--accent-color); color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; box-shadow: var(--shadow-sm); transition: 0.2s;}
 .btn-modal-save:hover { background-color: #0c385f; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.report-tabs-nav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.btn-report {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--gray-ui);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-report:hover {
+  background-color: white;
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.btn-report.active {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 10px rgba(15, 76, 129, 0.3);
+}
