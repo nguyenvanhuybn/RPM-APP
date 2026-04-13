@@ -313,7 +313,7 @@ function App() {
             {tanks.map(tank => (
               <React.Fragment key={tank.id}>
                 <tr className="actual-row premium-tr">
-                  <td rowSpan="2" className="tank-name">{tank.name}</td>
+                  <td rowSpan="2" className="tank-name" onClick={() => { setEditingTank({...tank}); setModalType('TANK'); }} style={{cursor:'pointer', color:'var(--accent-color)', textDecoration:'underline'}}>{tank.name}</td>
                   <td rowSpan="2" className="tank-status"><span className={tank.status === 'ON' ? 'text-success' : 'text-muted'}>{tank.status}</span></td>
                   <td rowSpan="2" className="tank-product">{tank.product}</td>
                   <td className="row-label">Thực tế</td>
@@ -384,6 +384,108 @@ function App() {
            {activeTab === 'reports' && renderReports()}
         </div>
       </main>
+
+      {/* TANK UPDATE MODAL */}
+      {modalType === 'TANK' && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{width: '400px'}}>
+            <div className="modal-header">
+              <h3>Cập nhật mã sản phẩm</h3>
+              <button className="close-btn" onClick={() => setModalType('NONE')}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>BỂ MẠ</label>
+                  <input type="text" readOnly value={editingTank.name} className="form-input" style={{backgroundColor: '#f3f4f6'}}/>
+                </div>
+                <div className="form-group">
+                  <label>MÃ SP</label>
+                  <select value={editingTank.product} onChange={(e) => setEditingTank({...editingTank, product: e.target.value})} className="form-input select-input">
+                    <option value="">Chọn mã sản phẩm</option>
+                    {productsList.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-modal-save" onClick={() => {
+                if(!editingTank.name) return;
+                setTanks(tanks.map(t => t.id === editingTank.id ? editingTank : t));
+                setModalType('NONE');
+              }}>💾 LƯU THÔNG TIN</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PRODUCT ADD/EDIT MODAL */}
+      {modalType === 'PRODUCT' && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{width: '740px'}}>
+            <div className="modal-header">
+              <h3>{editingProduct.id ? 'CHỈNH SỬA SẢN PHẨM' : 'THÊM MỚI SẢN PHẨM'}</h3>
+              <button className="close-btn" onClick={() => setModalType('NONE')}>×</button>
+            </div>
+            <div className="modal-body" style={{padding: '24px 32px'}}>
+              <div className="form-row-3" style={{marginBottom: '24px'}}>
+                <div className="form-group">
+                  <label>MÃ SP</label>
+                  <input type="text" value={editingProduct.code} onChange={e=>setEditingProduct({...editingProduct, code: e.target.value})} placeholder="VD: SP-001" className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label>SẢN LƯỢNG</label>
+                  <input type="number" value={editingProduct.volume} onChange={e=>setEditingProduct({...editingProduct, volume: e.target.value})} placeholder="0" className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label>NHIỆT ĐỘ (°C)</label>
+                  <input type="number" value={editingProduct.temp} onChange={e=>setEditingProduct({...editingProduct, temp: e.target.value})} placeholder="0" className="form-input" />
+                </div>
+              </div>
+
+              <div className="form-group-section premium-card">
+                <div className="form-group-title"><span className="dot"></span> THÔNG SỐ MẠ NGƯỢC</div>
+                <div className="form-row-3">
+                  <div className="form-group"><label>DÒNG ĐIỆN</label><input type="number" value={editingProduct.revA} onChange={e=>setEditingProduct({...editingProduct, revA: e.target.value})} className="form-input" /></div>
+                  <div className="form-group"><label>ĐIỆN ÁP</label><input type="number" value={editingProduct.revV} onChange={e=>setEditingProduct({...editingProduct, revV: e.target.value})} className="form-input" /></div>
+                  <div className="form-group"><label>THỜI GIAN</label><input type="number" value={editingProduct.revT} onChange={e=>setEditingProduct({...editingProduct, revT: e.target.value})} className="form-input" /></div>
+                </div>
+              </div>
+
+              <div className="form-group-section premium-card">
+                <div className="form-group-title"><span className="dot"></span> THÔNG SỐ MẠ THUẬN 1</div>
+                <div className="form-row-3">
+                  <div className="form-group"><label>DÒNG ĐIỆN</label><input type="number" value={editingProduct.fwd1A} onChange={e=>setEditingProduct({...editingProduct, fwd1A: e.target.value})} className="form-input" /></div>
+                  <div className="form-group"><label>ĐIỆN ÁP</label><input type="number" value={editingProduct.fwd1V} onChange={e=>setEditingProduct({...editingProduct, fwd1V: e.target.value})} className="form-input" /></div>
+                  <div className="form-group"><label>THỜI GIAN</label><input type="number" value={editingProduct.fwd1T} onChange={e=>setEditingProduct({...editingProduct, fwd1T: e.target.value})} className="form-input" /></div>
+                </div>
+              </div>
+
+              <div className="form-group-section premium-card">
+                <div className="form-group-title"><span className="dot"></span> THÔNG SỐ MẠ THUẬN 2</div>
+                <div className="form-row-3">
+                  <div className="form-group"><label>DÒNG ĐIỆN</label><input type="number" value={editingProduct.fwd2A} onChange={e=>setEditingProduct({...editingProduct, fwd2A: e.target.value})} className="form-input" /></div>
+                  <div className="form-group"><label>ĐIỆN ÁP</label><input type="number" value={editingProduct.fwd2V} onChange={e=>setEditingProduct({...editingProduct, fwd2V: e.target.value})} className="form-input" /></div>
+                  <div className="form-group"><label>THỜI GIAN</label><input type="number" value={editingProduct.fwd2T} onChange={e=>setEditingProduct({...editingProduct, fwd2T: e.target.value})} className="form-input" /></div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-modal-cancel" onClick={() => setModalType('NONE')}>HUỶ</button>
+              <button className="btn-modal-save premium-hover" onClick={() => {
+                if(!editingProduct.code) return alert("Vui lòng nhập Mã SP");
+                const nowStr = '16h00, 13/04/2026';
+                if (editingProduct.id) {
+                   setProducts(products.map(p => p.id === editingProduct.id ? {...editingProduct, updated: nowStr} : p));
+                } else {
+                   setProducts([...products, { ...editingProduct, id: editingProduct.code, updated: nowStr }]);
+                }
+                setModalType('NONE');
+              }}>💾 LƯU THÔNG TIN</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
